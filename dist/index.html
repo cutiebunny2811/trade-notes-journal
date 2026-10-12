@@ -27,7 +27,7 @@
       </nav>
       <div class="sidebar-foot">
         <div class="sync-dot"></div>
-        <div><strong>DATA · ON THIS DEVICE</strong></div>
+        <div><strong id="syncStatus">DATA · CONNECTING</strong><button id="signOutBtn" type="button" hidden>ออกจากระบบ</button></div>
       </div>
     </aside>
 
@@ -148,6 +148,22 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth-card">
+      <img src="trade-notes-icon-premium.png" alt="" width="66" height="66">
+      <p class="eyebrow">YOUR PRIVATE TRADE DESK</p>
+      <h2 id="authTitle">Trade Notes</h2>
+      <p>เข้าสู่ระบบเพื่อบันทึกออเดอร์และรูปไว้บนคลาวด์อย่างปลอดภัย</p>
+      <form id="authForm">
+        <label>อีเมล<input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+        <label>รหัสผ่าน<input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร"></label>
+        <button class="primary-btn" type="submit">เข้าสู่ระบบ</button>
+      </form>
+      <button class="auth-switch" id="signUpBtn" type="button">ยังไม่มีบัญชี? สมัครใช้งาน</button>
+      <p class="auth-message" id="authMessage" role="status"></p>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

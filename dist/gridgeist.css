@@ -198,11 +198,11 @@ input,select,textarea{min-height:44px;border-color:#c8cbc3;background:#fbfbf8;pa
 
 /* Trade Notes v5 — restrained wine / bronze / deep-green system */
 :root{
-  --g-bg:#e0e0e0;
-  --g-surface:#f2f2ee;
+  --g-bg:#cdd5ce;
+  --g-surface:#e5eae4;
   --g-ink:#03110d;
-  --g-muted:#69716d;
-  --g-rule:#c5c8c4;
+  --g-muted:#5f6b63;
+  --g-rule:#b8c3ba;
   --g-rail:#03110d;
   --g-accent:#a38560;
   --g-danger:#390517;
@@ -244,7 +244,7 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .pl-cell.win{color:#176a58}.pl-cell.loss{color:#8e2d48}
 .pending-pl{color:#7b6040!important}
 
-.reflection-panel{background:#03110d;border-top:3px solid #a38560}
+.reflection-panel{background:#10241e;border-top:3px solid #a38560}
 .reflection-panel>.eyebrow{color:#a38560}
 .reflection-panel>.muted{color:#8f9993}
 .emotion-summary{margin:20px 0 8px}
@@ -283,6 +283,15 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .emotion-choice.selected{background:#16302b}
 .form-actions .secondary-btn,.modal-head .icon-btn{color:#7f1535;border-color:#7f1535;background:#f2eded}
 .form-actions .secondary-btn:hover,.modal-head .icon-btn:hover{background:#390517;color:white}
+
+/* Keep the journal compact while longer summaries and lists remain scrollable. */
+.trade-columns{background:#dbe2db}
+.trade-row:hover{background:#edf1ec}
+.setup-chip{background:#d5ddd5}
+#tradeList{max-height:510px;overflow-y:auto;scrollbar-color:#91a298 #e5eae4;scrollbar-width:thin}
+@media(min-width:901px){
+  .reflection-panel{max-height:430px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#8d7452 #10241e;scrollbar-width:thin}
+}
 
 @media(max-width:900px){
   .brand-mark{border-radius:8px}
@@ -346,3 +355,21 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
   .nav-item.active{background:#0a1d17;box-shadow:none}
   .nav-item::before,.nav-item.active::before{left:18px;right:18px;top:0;bottom:auto;width:auto;height:2px;border-radius:0;box-shadow:none}
 }
+
+/* Private cloud sign-in. The approved sidebar artwork and navigation are untouched. */
+.auth-gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px;background:#071711df;backdrop-filter:blur(11px)}
+.auth-gate[hidden]{display:none}
+.auth-card{width:min(100%,410px);padding:32px;background:#e5eae4;border:1px solid #bdc8be;box-shadow:0 25px 80px #0007;color:#12231b}
+.auth-card>img{display:block;margin-bottom:22px;border-radius:14px}
+.auth-card .eyebrow{color:#977249}
+.auth-card h2{font:400 35px/1.1 Georgia,serif;margin:7px 0 9px}
+.auth-card>p:not(.eyebrow){font:400 13px/1.6 "Noto Sans Thai",sans-serif;color:#56635a;margin:0 0 22px}
+.auth-card form{display:grid;gap:13px}
+.auth-card label{display:grid;gap:6px;font:600 11px "Noto Sans Thai",sans-serif}
+.auth-card input{height:43px;padding:0 12px;background:#f3f5f0;border:1px solid #b7c4b9;color:#12231b;font:500 14px "Space Grotesk",sans-serif;outline:none}
+.auth-card input:focus{border-color:#ac8654;box-shadow:0 0 0 2px #ac865422}
+.auth-card .primary-btn{margin-top:7px;min-height:44px;justify-content:center}
+.auth-switch{display:block;margin:18px auto 0;padding:3px 0;border:0;background:none;color:#234839;font:600 12px "Noto Sans Thai",sans-serif;cursor:pointer}
+.auth-message{min-height:18px;margin:12px 0 0!important;color:#8d3141!important}
+#signOutBtn{display:block;margin-top:6px;padding:0;border:0;background:none;color:#bdac90;font:500 10px "Noto Sans Thai",sans-serif;text-align:left;cursor:pointer}
+#signOutBtn[hidden]{display:none}

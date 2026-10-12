@@ -1,0 +1,4 @@
+site-package*.tar.gz
+.env
+.env.*
+node_modules/
