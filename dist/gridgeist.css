@@ -195,3 +195,93 @@ input,select,textarea{min-height:44px;border-color:#c8cbc3;background:#fbfbf8;pa
 }
 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Trade Notes v5 — restrained wine / bronze / deep-green system */
+:root{
+  --g-bg:#e0e0e0;
+  --g-surface:#f2f2ee;
+  --g-ink:#03110d;
+  --g-muted:#69716d;
+  --g-rule:#c5c8c4;
+  --g-rail:#03110d;
+  --g-accent:#a38560;
+  --g-danger:#390517;
+}
+
+body,button,input,select,textarea{font-family:"Space Grotesk","Noto Sans Thai",sans-serif}
+.eyebrow,.stat-card>span,.open-counter span,.trade-columns span,.trade-date,.sidebar-foot strong,.form-section-label small,.field>span,.coach-note strong,.emotion-sample,.emotion-insight-card>span,.emotion-insight-card>strong,.brand-copy small{font-family:"JetBrains Mono",monospace}
+h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-item,.text-btn,.emotion-legend span,.emotion-choice span>strong{font-family:"Space Grotesk","Noto Sans Thai",sans-serif}
+.stat-card strong,.open-counter strong,.pl-cell,.trade-date strong,.trade-date span,.symbol-cell strong,.direction,.status-chip{font-family:"JetBrains Mono",monospace}
+
+.sidebar{background:#03110d;border-right-color:#16302b}
+.brand{gap:11px;padding:0 4px;text-transform:none;letter-spacing:0}
+.brand-mark{width:40px;height:40px;border:1px solid #a38560;border-radius:10px;background:#0a1d17;color:#a38560;flex:0 0 auto}
+.brand-mark svg{width:32px;height:32px;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand-mark .logo-axis{stroke:#65736c;stroke-width:1.4}
+.brand-mark .logo-trend{stroke:#a38560;stroke-width:2.5}
+.brand-mark circle{fill:#e0e0e0;stroke:#390517;stroke-width:1.4}
+.brand-copy{min-width:0;display:block}
+.brand-copy strong{display:block;color:#f2f2ee;font:700 13px/1 "Space Grotesk",sans-serif;white-space:nowrap}
+.brand-copy small{display:block;color:#748079;font-size:7px;letter-spacing:.12em;margin-top:6px;white-space:nowrap}
+.nav-item.active{background:#16302b}
+.nav-item.active::before{background:#a38560}
+.nav-item.active .nav-icon{color:#d0b58f}
+.sync-dot{background:#a38560;box-shadow:0 0 0 4px #a3856025}
+.sidebar-foot strong{font-size:7px;color:#929c96;letter-spacing:.06em}
+
+.primary-btn{background:#390517;border-bottom-color:#a38560}
+.primary-btn:hover{background:#4e0c22}
+.primary-btn span{color:#d2b58f}
+.primary-btn:focus-visible,.secondary-btn:focus-visible,.filter:focus-visible,.nav-item:focus-visible,.emotion-choice:focus-visible{outline-color:#a38560}
+.stat-card.main-stat{background:#16302b}
+.stat-card.main-stat strong.positive{color:#d4bc99}
+.stat-card.main-stat strong.negative{color:#eca4aa}
+.filter.active{background:#16302b}
+.direction.long{color:#1e705d}.direction.short{color:#8e2d48}
+.status-chip{background:#d8c5aa;border-color:#a38560;color:#3e2a19}
+.pl-cell.win{color:#176a58}.pl-cell.loss{color:#8e2d48}
+.pending-pl{color:#7b6040!important}
+
+.reflection-panel{background:#03110d;border-top:3px solid #a38560}
+.reflection-panel>.eyebrow{color:#a38560}
+.reflection-panel>.muted{color:#8f9993}
+.emotion-summary{margin:20px 0 8px}
+.emotion-summary-card{padding:12px 0;border-top-color:#20312b}
+.emotion-summary-card:last-child{border-bottom-color:#20312b}
+.emotion-line-head>strong{font-family:"Noto Sans Thai",sans-serif;font-size:12px;color:#d9dcda}
+.emotion-sample{font-size:8px;letter-spacing:.08em;color:#79857e}
+.emotion-distribution{height:9px;margin-top:9px;background:#14251f;border-radius:0}
+.emotion-distribution i{position:relative}
+.emotion-distribution i+i{box-shadow:inset 1px 0 0 #03110d}
+.emotion-confident{color:#399275!important}.emotion-anxious{color:#b74c5e!important}.emotion-hesitant{color:#b98b48!important}.emotion-fomo{color:#7c6b9b!important}
+.emotion-distribution .emotion-confident{background:#399275}.emotion-distribution .emotion-anxious{background:#b74c5e}.emotion-distribution .emotion-hesitant{background:#b98b48}.emotion-distribution .emotion-fomo{background:#7c6b9b}
+.emotion-dot.emotion-confident{color:#399275!important}.emotion-dot.emotion-anxious{color:#b74c5e!important}.emotion-dot.emotion-hesitant{color:#b98b48!important}.emotion-dot.emotion-fomo{color:#7c6b9b!important}
+.emotion-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;padding:12px 0 18px;border-bottom:1px solid #20312b}
+.emotion-legend span{display:flex;align-items:center;gap:7px;color:#aab2ad;font:500 9px "Space Grotesk",sans-serif}
+.emotion-legend i{display:block;width:7px;height:7px;border-radius:50%;background:currentColor}
+.emotion-insights{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}
+.emotion-insight-card{position:relative;min-width:0;padding:13px 12px 12px;background:#0c1d17;border:1px solid #263731;overflow:hidden}
+.emotion-insight-card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:currentColor}
+.emotion-insight-card>span{display:block;color:#87928c;font-size:6px;line-height:1.5;letter-spacing:.05em}
+.emotion-insight-card>strong{display:block;color:#eef0ee!important;font-size:16px;line-height:1;margin:10px 0 7px;letter-spacing:-.04em}
+.emotion-insight-card>strong.is-loss{color:#d87986!important}
+.emotion-insight-card>small{display:block;color:#9da7a1;font:500 9px/1.4 "Noto Sans Thai",sans-serif}
+.coach-note{padding-top:16px;border-top:1px solid #20312b}
+.coach-note>span{color:#a38560}
+
+.emotion-choice.emotion-confident{--emotion-accent:#399275}.emotion-choice.emotion-anxious{--emotion-accent:#b74c5e}.emotion-choice.emotion-hesitant{--emotion-accent:#b98b48}.emotion-choice.emotion-fomo{--emotion-accent:#7c6b9b}
+.emotion-choice.emotion-confident>b{background:#399275}.emotion-choice.emotion-anxious>b{background:#b74c5e}.emotion-choice.emotion-hesitant>b{background:#b98b48}.emotion-choice.emotion-fomo>b{background:#7c6b9b}
+.emotion-choice.selected{background:#16302b}
+.form-actions .secondary-btn,.modal-head .icon-btn{color:#7f1535;border-color:#7f1535;background:#f2eded}
+.form-actions .secondary-btn:hover,.modal-head .icon-btn:hover{background:#390517;color:white}
+
+@media(max-width:900px){
+  .brand-mark{border-radius:8px}
+  .nav-item.active{background:#16302b}
+}
+
+@media(max-width:640px){
+  .emotion-insights{grid-template-columns:1fr 1fr}
+  .emotion-insight-card{padding:12px 10px}
+  .emotion-insight-card>strong{font-size:15px}
+}

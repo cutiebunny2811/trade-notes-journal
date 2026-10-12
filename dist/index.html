@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f3f1eb" />
+  <meta name="theme-color" content="#03110d" />
   <title>Trade Notes — Trading Journal</title>
   <meta name="description" content="สมุดบันทึกการเทรดส่วนตัวสำหรับจด P/L, Setup, ภาพออเดอร์ และอารมณ์" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="fixes.css" />
   <link rel="stylesheet" href="gridgeist.css" />
@@ -17,8 +17,8 @@
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Trade Notes">
-        <span class="brand-mark">TN</span>
-        <span>TRADE NOTES</span>
+        <span class="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path class="logo-axis" d="M9 9v22h22"/><path class="logo-trend" d="m11 27 7-8 5 4 7-11"/><circle cx="18" cy="19" r="2"/><circle cx="30" cy="12" r="2"/></svg></span>
+        <span class="brand-copy"><strong>Trade Notes</strong><small>JOURNAL · P/L</small></span>
       </a>
       <nav>
         <button class="nav-item active" data-view="journal"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM9 5v14M9 10h10M9 15h10"/></svg></span><span>Journal</span></button>
@@ -27,7 +27,7 @@
       </nav>
       <div class="sidebar-foot">
         <div class="sync-dot"></div>
-        <div><small>DATA MODE</small><strong>ON THIS DEVICE</strong></div>
+        <div><strong>DATA · ON THIS DEVICE</strong></div>
       </div>
     </aside>
 
@@ -80,6 +80,10 @@
           <h2>อารมณ์ตอนเทรด</h2>
           <p class="muted">อารมณ์ที่เกิดบ่อยในแต่ละช่วง</p>
           <div class="emotion-summary" id="emotionSummary"></div>
+          <div class="emotion-legend" aria-label="คำอธิบายสีอารมณ์">
+            <span><i class="emotion-confident"></i>Confident</span><span><i class="emotion-anxious"></i>Anxious</span><span><i class="emotion-hesitant"></i>Hesitant</span><span><i class="emotion-fomo"></i>FOMO</span>
+          </div>
+          <div class="emotion-insights" id="emotionInsights"></div>
           <div class="coach-note">
             <span>✦</span>
             <div><strong>NOTE TO SELF</strong><p id="coachText">จดอารมณ์ทุกครั้ง แล้วคุณจะเริ่มเห็นว่าใจมีผลกับการตัดสินใจแค่ไหน</p></div>
