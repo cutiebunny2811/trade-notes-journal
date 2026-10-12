@@ -311,7 +311,7 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
     width:52px;height:52px;border:0;border-radius:13px;
     background:none;box-shadow:none;overflow:hidden;
   }
-  .brand-mark img{position:absolute;width:60.7px;height:auto;max-width:none;left:-2.2px;top:-4.3px}
+  .brand-mark img{position:absolute;width:76px;height:auto;max-width:none;left:-13px;top:-9px}
   .brand-copy strong{font-family:Georgia,"Times New Roman",serif;font-size:22px;font-weight:400;letter-spacing:-.025em;color:#f7f5ee;line-height:1;white-space:nowrap}
   .brand-copy small{color:#a49b88;font-size:8px;letter-spacing:.18em;margin-top:9px}
   .sidebar nav{margin-top:16px;gap:10px}
