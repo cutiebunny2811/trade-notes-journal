@@ -42,7 +42,7 @@
       <section class="stats-grid" aria-label="สรุปผลการเทรด">
         <article class="stat-card main-stat">
           <span>NET P/L</span>
-          <strong id="netPL">฿0</strong>
+          <strong id="netPL">$0</strong>
           <small id="netCaption">จาก 0 เทรด</small>
         </article>
         <article class="stat-card"><span>WIN RATE</span><strong id="winRate">—</strong><small>เทรดที่ปิดกำไร</small></article>
@@ -71,8 +71,8 @@
 
         <aside class="reflection-panel">
           <p class="eyebrow">EMOTIONAL CHECK</p>
-          <h2>สภาพใจในแต่ละช่วง</h2>
-          <p class="muted">ค่าเฉลี่ยจากบันทึกทั้งหมด</p>
+          <h2>อารมณ์ตอนเทรด</h2>
+          <p class="muted">อารมณ์ที่เกิดบ่อยในแต่ละช่วง</p>
           <div class="emotion-summary" id="emotionSummary"></div>
           <div class="coach-note">
             <span>✦</span>
@@ -96,12 +96,12 @@
             <label class="field"><span>ORDER STATUS</span><select id="tradeStatus"><option value="pending">กำลังถือ / PENDING</option><option value="closed">ปิดออเดอร์แล้ว</option></select></label>
             <label class="field"><span>DIRECTION</span><select id="direction"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></label>
             <label class="field"><span>DATE & TIME</span><input id="tradeDate" type="datetime-local" required /></label>
-            <label class="field" id="plField"><span>P/L (บาท)</span><input id="pl" type="number" step="0.01" placeholder="ใส่เมื่อปิดออเดอร์แล้ว" /></label>
+            <label class="field" id="plField"><span>P/L (USD)</span><input id="pl" type="number" step="0.01" placeholder="เช่น 125.50 หรือ -40" /></label>
             <label class="field"><span>SETUP</span><div class="input-combo"><select id="setup"></select><button type="button" id="quickAddSetup" aria-label="เพิ่ม Setup">＋</button></div></label>
           </div>
         </div>
         <div class="form-section">
-          <div class="form-section-label"><span>02</span><div><strong>อารมณ์ระหว่างเทรด</strong><small>HOW DID YOU FEEL?</small></div></div>
+          <div class="form-section-label"><span>02</span><div><strong>อารมณ์ตอนเทรด</strong><small>TRADING EMOTIONS</small></div></div>
           <div class="emotion-form" id="emotionForm"></div>
         </div>
         <div class="form-section">
