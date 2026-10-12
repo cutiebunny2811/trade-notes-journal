@@ -6,6 +6,7 @@ const CLOUD_KEY = 'sb_publishable_-zWhSbG4lfuTqd1T6o2P4A_D_CveFwH';
 const cloud = window.supabase?.createClient(CLOUD_URL, CLOUD_KEY);
 let cloudUser = null;
 let cloudReady = false;
+let loadingUserId = null;
 const TRADE_EMOTIONS = [
   { id:'confident', label:'Confident', thai:'มั่นใจ', mark:'↗' },
   { id:'anxious', label:'Anxious', thai:'กังวล', mark:'≈' },
@@ -32,16 +33,16 @@ function save(){ localStorage.setItem(STORAGE.trades, JSON.stringify(trades)); l
 function cloudError(error){ throw new Error(error?.message || 'เชื่อมต่อ Supabase ไม่สำเร็จ'); }
 function dataUrlBlob(src){ const [header,body]=src.split(',');const mime=header.match(/data:([^;]+)/)?.[1]||'image/jpeg';const bytes=atob(body),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime}); }
 async function imageUrl(path){const {data,error}=await cloud.storage.from('trade-images').createSignedUrl(path,86400);if(error)cloudError(error);return data.signedUrl;}
-async function prepareRemoteTrade(trade,old){
+async function prepareRemoteTrade(trade,old,importing=false){
   const imagePaths=[];
-  for(const src of trade.images||[]){
-    if(src.startsWith('data:')){const path=`${cloudUser.id}/${trade.id}/${crypto.randomUUID()}.jpg`;const {error}=await cloud.storage.from('trade-images').upload(path,dataUrlBlob(src),{contentType:'image/jpeg',upsert:false});if(error)cloudError(error);imagePaths.push(path);}
+  for(const [imageIndex,src] of (trade.images||[]).entries()){
+    if(src.startsWith('data:')){const path=`${cloudUser.id}/${trade.id}/${importing?`import-${imageIndex}`:crypto.randomUUID()}.jpg`;const {error}=await cloud.storage.from('trade-images').upload(path,dataUrlBlob(src),{contentType:'image/jpeg',upsert:false});if(error&&!(importing&&String(error.statusCode)==='409'))cloudError(error);imagePaths.push(path);}
     else {const index=old?.images?.indexOf(src)??-1;if(index>=0&&old.imagePaths?.[index])imagePaths.push(old.imagePaths[index]);}
   }
   return {...trade,imagePaths};
 }
-async function persistTrade(trade,old){
-  const prepared=await prepareRemoteTrade(trade,old);
+async function persistTrade(trade,old,importing=false){
+  const prepared=await prepareRemoteTrade(trade,old,importing);
   const {images,imagePaths,...clean}=prepared;
   const {error}=await cloud.from('journal_trades').upsert({id:trade.id,user_id:cloudUser.id,data:{...clean,imagePaths},updated_at:new Date().toISOString()});if(error)cloudError(error);
   return {...trade,imagePaths};
@@ -62,7 +63,7 @@ async function loadCloud(){
   }
   const remoteIds=new Set(remoteTrades.map(row=>row.id));
   const missing=localTrades.filter(t=>!remoteIds.has(t.id));
-  for(const trade of missing)await persistTrade(trade,null);
+  for(const trade of missing)await persistTrade(trade,null,true);
   const remoteNames=new Set(remoteSetups.map(row=>row.name));
   for(const name of localSetups.filter(name=>!remoteNames.has(name))){const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error&&error.code!=='23505')cloudError(error);}
   const [{data:allTrades,error:reloadError},{data:allSetups,error:reloadSetupError}]=await Promise.all([
@@ -77,9 +78,10 @@ async function loadCloud(){
 }
 async function acceptSession(session){
   if(!session?.user){cloudUser=null;cloudReady=false;$('#authGate').hidden=false;$('#syncStatus').textContent='DATA · SIGN IN REQUIRED';$('#signOutBtn').hidden=true;return;}
-  if(cloudReady&&cloudUser?.id===session.user.id)return;
+  if((cloudReady&&cloudUser?.id===session.user.id)||loadingUserId===session.user.id)return;
+  loadingUserId=session.user.id;
   cloudUser=session.user;$('#authMessage').textContent='กำลังโหลดบันทึก…';
-  try{await loadCloud();}catch(error){$('#authGate').hidden=false;$('#authMessage').textContent=`โหลดข้อมูลไม่สำเร็จ: ${error.message}`;}
+  try{await loadCloud();}catch(error){$('#authGate').hidden=false;$('#authMessage').textContent=`โหลดข้อมูลไม่สำเร็จ: ${error.message}`;}finally{loadingUserId=null;}
 }
 function money(n){ const abs = Math.abs(Number(n)); return `${n > 0 ? '+' : n < 0 ? '−' : ''}$${abs.toLocaleString('en-US',{maximumFractionDigits:2})}`; }
 function emotionOptions(stage){ return stage==='after'?EXIT_EMOTIONS:TRADE_EMOTIONS; }
@@ -135,15 +137,18 @@ function updateStatusFields(){ const pending=$('#tradeStatus').value==='pending'
 function openTrade(trade){
   $('#tradeForm').reset(); pendingImages=trade?.images?[...trade.images]:[]; $('#tradeId').value=trade?.id||''; $('#formTitle').textContent=trade?'ดูและแก้ไขบันทึก':'บันทึกเทรด';
   $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
+  $('#deleteTradeBtn').hidden=!trade;
   renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions); renderPreviews(); openModal('trade');
 }
 function openModal(which){ $(`#${which}Modal`).classList.add('open'); $(`#${which}Modal`).setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
-function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); }
+function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); if(!$('.modal.open'))document.body.classList.remove('modal-open'); }
 
 $('#tradeForm').addEventListener('submit',async e=>{e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน'); const status=$('#tradeStatus').value;const emotions={}; $$('.emotion-field').forEach(f=>emotions[f.dataset.emotion]=f.dataset.emotion==='after'&&status==='pending'?null:$('.selected',f).dataset.value); const id=$('#tradeId').value||crypto.randomUUID(); const old=trades.find(t=>t.id===id); const trade={id,status,symbol:$('#symbol').value.trim().toUpperCase(),direction:$('#direction').value,date:$('#tradeDate').value,pl:status==='pending'?null:Number($('#pl').value),setup:$('#setup').value,emotions,notes:$('#notes').value.trim(),images:pendingImages.length?pendingImages:(old?.images||[])}; const button=$('#tradeForm button[type="submit"]');button.disabled=true;try{const saved=await persistTrade(trade,old);trades=old?trades.map(t=>t.id===id?saved:t):[saved,...trades];save();render();closeModal('trade');toast(status==='pending'?'บันทึกเป็นออเดอร์กำลังถือแล้ว':'บันทึกเทรดแล้ว ✓');}catch(error){toast(`บันทึกไม่สำเร็จ: ${error.message}`);}finally{button.disabled=false;}});
 $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');const name=$('#newSetupName').value.trim();if(!name)return;if(setups.some(x=>x.toLowerCase()===name.toLowerCase()))return toast('มี Setup ชื่อนี้แล้ว');const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error)return toast(`เพิ่ม Setup ไม่สำเร็จ: ${error.message}`);setups.push(name);$('#newSetupName').value='';save();render();toast('เพิ่ม Setup แล้ว');});
 $('#screenshots').addEventListener('change',async e=>{const files=[...e.target.files].slice(0,3);pendingImages=await Promise.all(files.map(file=>new Promise(resolve=>{const img=new Image(),reader=new FileReader();reader.onload=()=>{img.onload=()=>{const c=document.createElement('canvas'),max=1200,scale=Math.min(1,max/img.width);c.width=img.width*scale;c.height=img.height*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.76));};img.src=reader.result};reader.readAsDataURL(file)})));renderPreviews();});
 $('#tradeStatus').addEventListener('change',updateStatusFields);
+$('#deleteTradeBtn').addEventListener('click',()=>{const trade=trades.find(t=>t.id===$('#tradeId').value);if(!trade)return;$('#deleteDescription').textContent=`${trade.symbol} · ${dateParts(trade.date).day} ${dateParts(trade.date).month} — รายการและรูปออเดอร์จะถูกลบออกจากคลาวด์ กู้คืนไม่ได้`;openModal('delete');});
+$('#confirmDeleteBtn').addEventListener('click',async()=>{const id=$('#tradeId').value,trade=trades.find(t=>t.id===id);if(!trade||!cloudReady)return;const button=$('#confirmDeleteBtn');button.disabled=true;try{const {data,error}=await cloud.from('journal_trades').delete().eq('id',id).eq('user_id',cloudUser.id).select('id');if(error)cloudError(error);if(!data?.length)throw new Error('ไม่พบรายการที่ลบได้');trades=trades.filter(t=>t.id!==id);save();render();closeModal('delete');closeModal('trade');const paths=trade.imagePaths||[];if(paths.length){const result=await cloud.storage.from('trade-images').remove(paths);if(result.error){toast('ลบรายการแล้ว แต่ลบไฟล์รูปไม่สำเร็จ');return;}}toast('ลบรายการเทรดแล้ว');}catch(error){toast(`ลบไม่สำเร็จ: ${error.message}`);}finally{button.disabled=false;}});
 function renderPreviews(){ $('#imagePreviews').innerHTML=(pendingImages.length?'<div class="saved-images-label">ภาพที่บันทึกไว้ — แตะภาพเพื่อดูขนาดเต็ม</div>':'')+pendingImages.map((src,i)=>`<div class="preview-wrap"><img src="${src}" alt="ภาพออเดอร์ ${i+1}" data-view-image="${i}"><button type="button" data-remove-image="${i}" aria-label="ลบภาพ ${i+1}">×</button></div>`).join(''); }
 function openImageViewer(images,index=0){ viewerImages=images;viewerIndex=index;updateViewer();$('#imageViewer').classList.add('open');$('#imageViewer').setAttribute('aria-hidden','false'); }
 function updateViewer(){ if(!viewerImages.length)return closeImageViewer();viewerIndex=(viewerIndex+viewerImages.length)%viewerImages.length;$('#viewerImage').src=viewerImages[viewerIndex];$('#viewerCount').textContent=`${viewerIndex+1} / ${viewerImages.length}`;$('.viewer-prev').hidden=viewerImages.length<2;$('.viewer-next').hidden=viewerImages.length<2; }

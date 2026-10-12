@@ -124,7 +124,7 @@
           <div class="image-previews" id="imagePreviews"></div>
           <label class="field notes-field"><span>NOTE / สิ่งที่ได้เรียนรู้</span><textarea id="notes" rows="3" placeholder="ทำอะไรได้ดี? ครั้งหน้าจะปรับอะไร?"></textarea></label>
         </div>
-        <div class="form-actions"><button type="button" class="secondary-btn" data-close="trade">ยกเลิก</button><button type="submit" class="primary-btn">บันทึก Journal →</button></div>
+        <div class="form-actions"><button type="button" class="delete-trade-btn" id="deleteTradeBtn" hidden>ลบรายการ</button><button type="button" class="secondary-btn" data-close="trade">ยกเลิก</button><button type="submit" class="primary-btn">บันทึก Journal →</button></div>
       </form>
     </div>
   </div>
@@ -136,6 +136,15 @@
       <p class="muted">สร้างชื่อรูปแบบการเข้าเทรดของคุณ แล้วเลือกใช้ตอนบันทึกแต่ละออเดอร์</p>
       <form id="setupForm" class="add-setup-row"><input id="newSetupName" placeholder="ชื่อ Setup ใหม่" required /><button class="primary-btn" type="submit">＋ เพิ่ม</button></form>
       <div class="setup-list" id="setupList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="deleteModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="delete"></div>
+    <div class="modal-card delete-card" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+      <div class="modal-head"><div><p class="eyebrow">DELETE ENTRY</p><h2 id="deleteTitle">ลบบันทึกนี้?</h2></div><button class="icon-btn" type="button" data-close="delete" aria-label="ปิด">×</button></div>
+      <p id="deleteDescription">รายการและรูปออเดอร์จะถูกลบออกจากคลาวด์ กู้คืนไม่ได้</p>
+      <div class="delete-actions"><button class="secondary-btn" type="button" data-close="delete">เก็บไว้ก่อน</button><button class="confirm-delete-btn" id="confirmDeleteBtn" type="button">ลบรายการนี้</button></div>
     </div>
   </div>
 

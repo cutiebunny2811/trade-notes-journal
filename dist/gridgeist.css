@@ -373,3 +373,19 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .auth-message{min-height:18px;margin:12px 0 0!important;color:#8d3141!important}
 #signOutBtn{display:block;margin-top:6px;padding:0;border:0;background:none;color:#bdac90;font:500 10px "Noto Sans Thai",sans-serif;text-align:left;cursor:pointer}
 #signOutBtn[hidden]{display:none}
+
+/* Destructive journal actions are distinct from Save and require a second step. */
+.delete-trade-btn{margin-right:auto;padding:10px 4px;border:0;background:transparent;color:#872b39;font:600 12px "Noto Sans Thai",sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap}
+.delete-trade-btn[hidden]{display:none}
+.delete-trade-btn:hover{color:#551324}
+#deleteModal{z-index:12}
+.delete-card{width:min(420px,calc(100% - 32px));max-height:calc(100dvh - 32px);height:auto;margin:max(10vh,42px) auto;background:#e7ebe5}
+.delete-card .modal-head{background:#e7ebe5}
+.delete-card>p{padding:20px 24px 0;margin:0;color:#4e5d54;font:400 13px/1.65 "Noto Sans Thai",sans-serif}
+.delete-actions{display:flex;justify-content:flex-end;gap:10px;padding:24px}
+.delete-actions .secondary-btn{color:#34483d;border-color:#afbaaf;background:transparent}
+.confirm-delete-btn{border:1px solid #681c2c;background:#681c2c;color:#fff4f2;padding:11px 16px;font:600 12px "Noto Sans Thai",sans-serif;cursor:pointer}
+.confirm-delete-btn:hover{background:#4c0d1d}
+.confirm-delete-btn:disabled{opacity:.5;cursor:wait}
+.viewer-nav[hidden]{display:none}
+@media(max-width:560px){.delete-card{width:calc(100% - 28px);max-height:none;height:auto;margin:22vh auto 0}.form-actions{gap:8px}.delete-trade-btn{font-size:11px}.form-actions .primary-btn,.form-actions .secondary-btn{padding:11px 12px}}

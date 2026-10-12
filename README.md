@@ -1,6 +1,6 @@
 # Trade Notes Journal
 
-Personal trading journal for pending and closed positions, P/L in USD, editable setups, emotions through the trade, and order screenshots.
+Personal trading journal for pending and closed positions, P/L in USD, editable setups, emotions through the trade, and order screenshots. Entries can be edited or deleted with confirmation; deleting an entry also removes its linked screenshots.
 
 The live app is hosted as a private Codex Site at https://trade-notes-journal.politecalf32.chatgpt.site/. It is a static app in `dist/`, backed by Supabase Authentication, Postgres, and a private Storage bucket. The public Supabase publishable key in `dist/app.js` is intentionally client-side; access to journal data and screenshots is restricted by Row Level Security policies in `supabase/migrations/20261013000000_trade_notes.sql`. Never place a Supabase secret or service-role key in this repository or browser code.
 
