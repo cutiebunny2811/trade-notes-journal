@@ -308,14 +308,10 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
   }
   .brand{gap:12px;padding:0 7px 24px;border-bottom:1px solid #1c342c}
   .brand-mark{
-    width:48px;height:48px;border:1px solid #b88b57;border-radius:13px;
-    background:linear-gradient(145deg,#10261f,#07130f 72%);
-    box-shadow:inset 0 0 0 1px #f1d49b14,0 8px 24px #0008,0 0 18px #a3856014;
+    width:48px;height:48px;border:0;border-radius:13px;
+    background:none;box-shadow:none;overflow:hidden;
   }
-  .brand-mark svg{width:37px;height:37px}
-  .brand-mark .logo-candle{fill:url(#tnGold);stroke:none}
-  .brand-mark .logo-wicks{fill:none;stroke:url(#tnGold);stroke-width:1.55;stroke-linecap:round}
-  .brand-mark .logo-trend,.brand-mark .logo-arrow{fill:none;stroke:url(#tnGold);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .brand-mark img{position:absolute;width:56px;height:auto;max-width:none;left:-2px;top:-4px}
   .brand-copy strong{font-size:14px;font-weight:600;letter-spacing:.01em;color:#f4eee4}
   .brand-copy small{color:#9c856a;font-size:6.5px;letter-spacing:.18em;margin-top:7px}
   .sidebar nav{margin-top:28px;gap:8px}
