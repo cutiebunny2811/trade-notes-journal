@@ -19,7 +19,7 @@ let viewerIndex = 0;
 function save(){ localStorage.setItem(STORAGE.trades, JSON.stringify(trades)); localStorage.setItem(STORAGE.setups, JSON.stringify(setups)); }
 function money(n){ const abs = Math.abs(Number(n)); return `${n > 0 ? '+' : n < 0 ? '−' : ''}$${abs.toLocaleString('en-US',{maximumFractionDigits:2})}`; }
 function normalizeEmotion(value){ if(EMOTIONS.some(e=>e.id===value))return value;if(value==null)return null;const n=Number(value);return n<=2?'anxious':n===3?'hesitant':'confident'; }
-function emotionMini(value,stage){ const id=normalizeEmotion(value);if(!id)return '<span class="emotion-empty">—</span>';const e=EMOTIONS.find(x=>x.id===id);return `<span class="emotion-mini emotion-${id}" title="${stage}: ${e.label}">${e.mark}</span>`; }
+function emotionMini(value,stage){ const id=normalizeEmotion(value);if(!id)return '<span class="emotion-dot is-empty" title="ยังไม่บันทึก"></span>';const e=EMOTIONS.find(x=>x.id===id);return `<span class="emotion-dot emotion-${id}" title="${stage}: ${e.label}"></span>`; }
 function escapeHTML(v=''){ return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function localDateValue(d=new Date()){ const x=new Date(d.getTime()-d.getTimezoneOffset()*60000); return x.toISOString().slice(0,16); }
 function dateParts(value){ const d=new Date(value); return {day:d.toLocaleDateString('th-TH',{day:'2-digit'}),month:d.toLocaleDateString('en-US',{month:'short'}).toUpperCase(),time:d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}; }
@@ -38,6 +38,7 @@ function render(){
   </article>`}).join('');
   $('#emptyState').hidden=filtered.length>0;
   const closed=trades.filter(t=>t.status!=='pending'), pending=trades.filter(t=>t.status==='pending');
+  $('#openTradeCount').textContent=pending.length; $('#tradeCount').textContent=`${trades.length} ENTRIES`;
   const net=closed.reduce((s,t)=>s+Number(t.pl),0), wins=closed.filter(t=>t.pl>0);
   $('#netPL').textContent=money(net); $('#netPL').className=net>=0?'positive':'negative';
   $('#netCaption').textContent=`${closed.length} ปิดแล้ว${pending.length?' · '+pending.length+' กำลังถือ':''}`; $('#winRate').textContent=closed.length?`${Math.round(wins.length/closed.length*100)}%`:'—';
@@ -47,7 +48,7 @@ function render(){
   renderEmotionSummary(); renderSetupOptions(); renderSetupList();
 }
 function renderEmotionSummary(){
-  const rows=['before','during','after'].map(k=>{const values=trades.map(t=>normalizeEmotion(t.emotions[k])).filter(Boolean);const counts=Object.fromEntries(EMOTIONS.map(e=>[e.id,values.filter(v=>v===e.id).length]));const dominant=EMOTIONS.slice().sort((a,b)=>counts[b.id]-counts[a.id])[0];const total=values.length||1;return `<div class="emotion-summary-card"><div class="emotion-line-head"><strong>${emotionLabels[k]}</strong>${values.length?`<span class="emotion-pill emotion-${dominant.id}"><b>${dominant.mark}</b>${dominant.label}</span>`:'<span class="no-emotion">ยังไม่มีข้อมูล</span>'}</div><div class="emotion-distribution">${EMOTIONS.map(e=>counts[e.id]?`<i class="emotion-${e.id}" style="width:${counts[e.id]/total*100}%" title="${e.label} ${counts[e.id]}"></i>`:'').join('')}</div></div>`});
+  const rows=['before','during','after'].map(k=>{const values=trades.map(t=>normalizeEmotion(t.emotions[k])).filter(Boolean);const counts=Object.fromEntries(EMOTIONS.map(e=>[e.id,values.filter(v=>v===e.id).length]));const dominant=EMOTIONS.slice().sort((a,b)=>counts[b.id]-counts[a.id])[0];const total=values.length||1;return `<div class="emotion-summary-card"><div class="emotion-line-head"><strong>${emotionLabels[k]}</strong>${values.length?`<span class="emotion-pill emotion-${dominant.id}">${dominant.label}</span>`:'<span class="no-emotion">NO DATA</span>'}</div><div class="emotion-distribution">${EMOTIONS.map(e=>counts[e.id]?`<i class="emotion-${e.id}" style="width:${counts[e.id]/total*100}%" title="${e.label} ${counts[e.id]}"></i>`:'').join('')}</div></div>`});
   $('#emotionSummary').innerHTML=rows.join('');
   if(trades.length>2){const during=trades.map(t=>normalizeEmotion(t.emotions.during));const risky=during.filter(x=>x==='anxious'||x==='fomo').length>during.length/2;$('#coachText').textContent=risky?'ช่วงถือออเดอร์มีความกังวลหรือ FOMO บ่อย ลองกำหนดแผนออกก่อนกดเข้า':'ภาพรวมอารมณ์ค่อนข้างนิ่ง ทบทวนบันทึกหลังปิดออเดอร์เพื่อรักษา pattern นี้ไว้';}
 }

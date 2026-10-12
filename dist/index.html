@@ -11,18 +11,19 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="fixes.css" />
+  <link rel="stylesheet" href="gridgeist.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Trade Notes">
-        <span class="brand-mark">T<span>N</span></span>
-        <span>TRADE<br>NOTES</span>
+        <span class="brand-mark">TN</span>
+        <span>TRADE NOTES</span>
       </a>
       <nav>
-        <button class="nav-item active" data-view="journal"><span class="nav-icon">⌁</span><span>Journal</span></button>
-        <button class="nav-item" data-view="setups"><span class="nav-icon">⌗</span><span>Setups</span></button>
-        <button class="nav-item" data-view="insights"><span class="nav-icon">↗</span><span>Insights</span></button>
+        <button class="nav-item active" data-view="journal"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM9 5v14M9 10h10M9 15h10"/></svg></span><span>Journal</span></button>
+        <button class="nav-item" data-view="setups"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M7 14v6"/></svg></span><span>Setups</span></button>
+        <button class="nav-item" data-view="insights"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7M3 19h18"/></svg></span><span>Insights</span></button>
       </nav>
       <div class="sidebar-foot">
         <div class="sync-dot"></div>
@@ -32,11 +33,15 @@
 
     <main>
       <header class="topbar">
-        <div>
-          <p class="eyebrow">TRADING JOURNAL / <span id="todayLabel"></span></p>
-          <h1>Good trading starts<br>with <em>good notes.</em></h1>
+        <div class="page-heading">
+          <p class="eyebrow">PERSONAL TRADE DESK / <span id="todayLabel"></span></p>
+          <h1>Trading Journal</h1>
+          <p class="page-intro">ทบทวนแผน การตัดสินใจ และอารมณ์ — ไม่ใช่แค่ผลลัพธ์</p>
         </div>
-        <button class="primary-btn" id="newTradeBtn"><span>＋</span> บันทึกเทรด</button>
+        <div class="topbar-actions">
+          <div class="open-counter"><span>OPEN POSITIONS</span><strong id="openTradeCount">0</strong></div>
+          <button class="primary-btn" id="newTradeBtn"><span>＋</span> บันทึกเทรด</button>
+        </div>
       </header>
 
       <section class="stats-grid" aria-label="สรุปผลการเทรด">
@@ -53,7 +58,7 @@
       <section class="content-grid">
         <div class="journal-panel">
           <div class="section-head">
-            <div><p class="eyebrow">RECENT ACTIVITY</p><h2>บันทึกล่าสุด</h2></div>
+            <div><p class="eyebrow">RECENT ACTIVITY / <span id="tradeCount">0</span></p><h2>บันทึกล่าสุด</h2></div>
             <div class="filters">
               <button class="filter active" data-filter="all">ทั้งหมด</button>
               <button class="filter" data-filter="pending">กำลังถือ</button>
@@ -61,6 +66,7 @@
               <button class="filter" data-filter="loss">ขาดทุน</button>
             </div>
           </div>
+          <div class="trade-columns" aria-hidden="true"><span>DATE</span><span>MARKET</span><span>SETUP</span><span>MINDSET</span><span>P/L</span><span>CHART</span><span></span></div>
           <div class="trade-list" id="tradeList"></div>
           <div class="empty-state" id="emptyState" hidden>
             <div class="empty-icon">＋</div><h3>ยังไม่มีบันทึก</h3>
