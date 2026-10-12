@@ -31,7 +31,7 @@ let viewerIndex = 0;
 function save(){ localStorage.setItem(STORAGE.trades, JSON.stringify(trades)); localStorage.setItem(STORAGE.setups, JSON.stringify(setups)); }
 function cloudError(error){ throw new Error(error?.message || 'เชื่อมต่อ Supabase ไม่สำเร็จ'); }
 function dataUrlBlob(src){ const [header,body]=src.split(',');const mime=header.match(/data:([^;]+)/)?.[1]||'image/jpeg';const bytes=atob(body),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime}); }
-async function imageUrl(path){const {data,error}=await cloud.storage.from('trade-images').createSignedUrl(path,3600);if(error)cloudError(error);return data.signedUrl;}
+async function imageUrl(path){const {data,error}=await cloud.storage.from('trade-images').createSignedUrl(path,86400);if(error)cloudError(error);return data.signedUrl;}
 async function prepareRemoteTrade(trade,old){
   const imagePaths=[];
   for(const src of trade.images||[]){
@@ -56,6 +56,10 @@ async function loadCloud(){
   const previousOwner=localStorage.getItem('trade-notes:cloud-owner');
   const canImport=!previousOwner||previousOwner===cloudUser.id;
   const localTrades=canImport?[...trades]:[],localSetups=canImport?[...setups]:[];
+  if(canImport&&!localStorage.getItem('trade-notes:v1:pre-cloud-backup')){
+    const original=localStorage.getItem(STORAGE.trades);
+    if(original&&localTrades.length)try{localStorage.setItem('trade-notes:v1:pre-cloud-backup',original);}catch(_error){/* Keep the original key until the first new save if browser storage is full. */}
+  }
   const remoteIds=new Set(remoteTrades.map(row=>row.id));
   const missing=localTrades.filter(t=>!remoteIds.has(t.id));
   for(const trade of missing)await persistTrade(trade,null);
@@ -67,7 +71,7 @@ async function loadCloud(){
   if(reloadError)cloudError(reloadError);if(reloadSetupError)cloudError(reloadSetupError);
   trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
   setups=allSetups.map(row=>row.name);
-  cloudReady=true;localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);save();render();
+  cloudReady=true;localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);render();
   $('#authGate').hidden=true;$('#syncStatus').textContent='DATA · SUPABASE';$('#signOutBtn').hidden=false;
   if(missing.length)toast(`ย้ายบันทึกเดิม ${missing.length} รายการขึ้นคลาวด์แล้ว`);
 }

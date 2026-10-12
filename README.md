@@ -10,7 +10,7 @@ Serve `dist/` with any static file server, for example `python -m http.server 41
 
 ## Existing journal data
 
-On the first authenticated visit in the original browser, the app imports any `trade-notes:v1:*` data from that browser's local storage into the signed-in Supabase account, uploading screenshots to private Storage. It does not delete the local copy. Sign in from the browser that contains the existing trades before switching devices. Subsequent devices load the cloud journal.
+On the first authenticated visit in the original browser, the app imports any `trade-notes:v1:*` data from that browser's local storage into the signed-in Supabase account, uploading screenshots to private Storage. It keeps the original local data and attempts to save a separate pre-cloud backup in local storage. Sign in from the browser that contains the existing trades before switching devices. Subsequent devices load the cloud journal.
 
 ## Data model
 
