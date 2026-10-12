@@ -1,0 +1,17 @@
+@media (min-width:901px){.trade-row{grid-template-columns:52px minmax(100px,1fr) minmax(90px,.7fr) 90px 100px 48px 30px}}
+.image-previews{flex-wrap:wrap}
+.saved-images-label{width:100%;font:700 9px "Space Mono";letter-spacing:.1em;color:var(--muted);margin:5px 0 0}
+.preview-wrap img{width:112px;height:82px;cursor:zoom-in;background:#ddd}
+.preview-wrap button{width:21px;height:21px;cursor:pointer}
+.status-chip{display:inline-block;font:700 9px "Space Mono";letter-spacing:.05em;padding:4px 6px;border:1px solid #a98700;color:#725c00;background:#fff2ad;margin-left:5px}
+.emotion-field.is-disabled{opacity:.42;background:#e9e7df;pointer-events:none}.emotion-field.is-disabled:after{content:'ใส่หลังปิดออเดอร์';display:block;font-size:10px;color:var(--muted);margin-top:8px}
+.field.is-disabled{opacity:.45}.pending-pl{color:#8b7100!important;font-size:11px!important}
+.image-viewer{position:fixed;inset:0;background:#0d0f0ceb;z-index:50;display:none;place-items:center;padding:42px}
+.image-viewer.open{display:grid}
+.image-viewer img{max-width:min(1100px,90vw);max-height:84vh;object-fit:contain;box-shadow:0 0 0 1px #ffffff35}
+.viewer-close,.viewer-nav{position:absolute;border:1px solid #ffffff55;background:#161914;color:white;cursor:pointer;display:grid;place-items:center}
+.viewer-close{right:22px;top:22px;width:42px;height:42px;font-size:27px}
+.viewer-nav{top:50%;width:46px;height:60px;font-size:38px;transform:translateY(-50%)}
+.viewer-prev{left:22px}.viewer-next{right:22px}
+.viewer-count{position:absolute;bottom:15px;color:white;font:11px "Space Mono";letter-spacing:.1em}
+@media(max-width:560px){.image-viewer{padding:15px}.viewer-nav{top:auto;bottom:16px;transform:none;width:42px;height:42px}.viewer-prev{left:16px}.viewer-next{right:16px}.viewer-close{right:16px;top:16px}}
