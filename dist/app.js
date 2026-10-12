@@ -1,12 +1,19 @@
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const STORAGE = { trades: 'trade-notes:v1:trades', setups: 'trade-notes:v1:setups' };
-const EMOTIONS = [
+const TRADE_EMOTIONS = [
   { id:'confident', label:'Confident', thai:'มั่นใจ', mark:'↗' },
   { id:'anxious', label:'Anxious', thai:'กังวล', mark:'≈' },
   { id:'hesitant', label:'Hesitant', thai:'ลังเล', mark:'◇' },
   { id:'fomo', label:'FOMO', thai:'กลัวตกรถ', mark:'⚡' }
 ];
+const EXIT_EMOTIONS = [
+  { id:'satisfied', label:'Satisfied', thai:'พึงพอใจ', mark:'✓' },
+  { id:'proud', label:'Proud', thai:'ภูมิใจ', mark:'◆' },
+  { id:'disappointed', label:'Disappointed', thai:'ผิดหวัง', mark:'↓' },
+  { id:'regretful', label:'Regretful', thai:'เสียดาย', mark:'↩' }
+];
+const EMOTIONS = TRADE_EMOTIONS;
 const emotionLabels = { before:'ก่อนเข้า', during:'ระหว่างถือ', after:'หลังปิด' };
 const seedSetups = ['Breakout + Retest','Liquidity Sweep','Trend Pullback'];
 let setups = JSON.parse(localStorage.getItem(STORAGE.setups) || 'null') || seedSetups;
@@ -18,8 +25,17 @@ let viewerIndex = 0;
 
 function save(){ localStorage.setItem(STORAGE.trades, JSON.stringify(trades)); localStorage.setItem(STORAGE.setups, JSON.stringify(setups)); }
 function money(n){ const abs = Math.abs(Number(n)); return `${n > 0 ? '+' : n < 0 ? '−' : ''}$${abs.toLocaleString('en-US',{maximumFractionDigits:2})}`; }
-function normalizeEmotion(value){ if(EMOTIONS.some(e=>e.id===value))return value;if(value==null)return null;const n=Number(value);return n<=2?'anxious':n===3?'hesitant':'confident'; }
-function emotionMini(value,stage){ const id=normalizeEmotion(value);if(!id)return '<span class="emotion-dot is-empty" title="ยังไม่บันทึก"></span>';const e=EMOTIONS.find(x=>x.id===id);return `<span class="emotion-dot emotion-${id}" title="${stage}: ${e.label}"></span>`; }
+function emotionOptions(stage){ return stage==='after'?EXIT_EMOTIONS:TRADE_EMOTIONS; }
+function normalizeEmotion(value,stage='before'){
+  const options=emotionOptions(stage);if(options.some(e=>e.id===value))return value;if(value==null)return null;
+  if(stage==='after'){
+    const legacy={confident:'satisfied',anxious:'disappointed',hesitant:'regretful',fomo:'regretful'};
+    if(legacy[value])return legacy[value];
+    const n=Number(value);return n<=2?'disappointed':n===3?'regretful':n===4?'satisfied':'proud';
+  }
+  const n=Number(value);return n<=2?'anxious':n===3?'hesitant':'confident';
+}
+function emotionMini(value,stage,label){ const id=normalizeEmotion(value,stage);if(!id)return '<span class="emotion-dot is-empty" title="ยังไม่บันทึก"></span>';const e=emotionOptions(stage).find(x=>x.id===id);return `<span class="emotion-dot emotion-${id}" title="${label}: ${e.label}"></span>`; }
 function escapeHTML(v=''){ return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function localDateValue(d=new Date()){ const x=new Date(d.getTime()-d.getTimezoneOffset()*60000); return x.toISOString().slice(0,16); }
 function dateParts(value){ const d=new Date(value); return {day:d.toLocaleDateString('th-TH',{day:'2-digit'}),month:d.toLocaleDateString('en-US',{month:'short'}).toUpperCase(),time:d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}; }
@@ -31,7 +47,7 @@ function render(){
     <div class="trade-date"><strong>${d.day}</strong><span>${d.month}</span></div>
     <div class="symbol-cell"><strong>${escapeHTML(t.symbol)} <span class="direction ${t.direction.toLowerCase()}">${t.direction}</span>${t.status==='pending'?'<span class="status-chip">PENDING</span>':''}</strong><small>${d.time} น.</small></div>
     <div class="setup-cell"><span class="setup-chip">${escapeHTML(t.setup||'No setup')}</span></div>
-    <div class="emotion-triplet">${emotionMini(t.emotions.before,'ก่อนเข้า')}${emotionMini(t.emotions.during,'ระหว่างถือ')}${emotionMini(t.emotions.after,'หลังปิด')}</div>
+    <div class="emotion-triplet">${emotionMini(t.emotions.before,'before','ก่อนเข้า')}${emotionMini(t.emotions.during,'during','ระหว่างถือ')}${emotionMini(t.emotions.after,'after','หลังปิด')}</div>
     <div class="pl-cell ${t.status==='pending'?'pending-pl':(t.pl>=0?'win':'loss')}">${t.status==='pending'?'กำลังถือ':money(t.pl)}</div>
     <div class="thumb-stack">${(t.images||[]).slice(0,2).map((src,i)=>`<img src="${src}" alt="ภาพออเดอร์ ${i+1}">`).join('')}</div>
     <button class="more-btn" aria-label="แก้ไข">›</button>
@@ -48,16 +64,16 @@ function render(){
   renderEmotionSummary(); renderSetupOptions(); renderSetupList();
 }
 function renderEmotionSummary(){
-  const rows=['before','during','after'].map(k=>{const values=trades.map(t=>normalizeEmotion(t.emotions[k])).filter(Boolean);const counts=Object.fromEntries(EMOTIONS.map(e=>[e.id,values.filter(v=>v===e.id).length]));const total=values.length||1;return `<div class="emotion-summary-card"><div class="emotion-line-head"><strong>${emotionLabels[k]}</strong></div><div class="emotion-distribution" aria-label="สัดส่วนอารมณ์ช่วง${emotionLabels[k]}">${EMOTIONS.map(e=>counts[e.id]?`<i class="emotion-${e.id}" style="width:${counts[e.id]/total*100}%" title="${e.label} ${counts[e.id]} ครั้ง"></i>`:'').join('')}</div></div>`});
+  const rows=['before','during','after'].map(k=>{const options=emotionOptions(k);const values=trades.map(t=>normalizeEmotion(t.emotions[k],k)).filter(Boolean);const counts=Object.fromEntries(options.map(e=>[e.id,values.filter(v=>v===e.id).length]));const total=values.length||1;return `<div class="emotion-summary-card"><div class="emotion-line-head"><strong>${emotionLabels[k]}</strong></div><div class="emotion-distribution" aria-label="สัดส่วนอารมณ์ช่วง${emotionLabels[k]}">${options.map(e=>counts[e.id]?`<i class="emotion-${e.id}" style="width:${counts[e.id]/total*100}%" title="${e.label} ${counts[e.id]} ครั้ง"></i>`:'').join('')}</div></div>`});
   $('#emotionSummary').innerHTML=rows.join('');
   const closed=trades.filter(t=>t.status!=='pending');
   const insight=id=>{const entries=closed.filter(t=>normalizeEmotion(t.emotions.before)===id),net=entries.reduce((sum,t)=>sum+Number(t.pl),0),wins=entries.filter(t=>Number(t.pl)>0).length,rate=entries.length?Math.round(wins/entries.length*100):0,label=EMOTIONS.find(e=>e.id===id).label;return `<article class="emotion-insight-card emotion-${id}"><span>BEFORE ENTRY · ${label.toUpperCase()}</span><strong class="${net>=0?'is-profit':'is-loss'}">${entries.length?money(net):'—'}</strong><small>${entries.length?`${entries.length} เทรด · WIN ${rate}%`:'ยังไม่มีข้อมูลเทรดที่ปิดแล้ว'}</small></article>`};
   $('#emotionInsights').innerHTML=insight('confident')+insight('hesitant');
-  if(trades.length>2){const during=trades.map(t=>normalizeEmotion(t.emotions.during));const risky=during.filter(x=>x==='anxious'||x==='fomo').length>during.length/2;$('#coachText').textContent=risky?'ช่วงถือออเดอร์มีความกังวลหรือ FOMO บ่อย ลองกำหนดแผนออกก่อนกดเข้า':'ภาพรวมอารมณ์ค่อนข้างนิ่ง ทบทวนบันทึกหลังปิดออเดอร์เพื่อรักษา pattern นี้ไว้';}
+  if(trades.length>2){const during=trades.map(t=>normalizeEmotion(t.emotions.during,'during'));const risky=during.filter(x=>x==='anxious'||x==='fomo').length>during.length/2;$('#coachText').textContent=risky?'ช่วงถือออเดอร์มีความกังวลหรือ FOMO บ่อย ลองกำหนดแผนออกก่อนกดเข้า':'ภาพรวมอารมณ์ค่อนข้างนิ่ง ทบทวนบันทึกหลังปิดออเดอร์เพื่อรักษา pattern นี้ไว้';}
 }
 function renderSetupOptions(selected){ const sel=$('#setup'); sel.innerHTML=setups.map(x=>`<option ${x===selected?'selected':''}>${escapeHTML(x)}</option>`).join('')+`<option value="">— ไม่ระบุ —</option>`; }
 function renderSetupList(){ $('#setupList').innerHTML=setups.map((x,i)=>`<div class="setup-item"><div><strong>${escapeHTML(x)}</strong><br><small>${trades.filter(t=>t.setup===x).length} บันทึก</small></div><button class="delete-setup" data-index="${i}" ${trades.some(t=>t.setup===x)?'title="ลบได้โดยบันทึกเก่าจะยังคงชื่อเดิม"':''}>ลบ</button></div>`).join(''); }
-function renderEmotionForm(values={before:'confident',during:'confident',after:'hesitant'}){ $('#emotionForm').innerHTML=Object.entries(emotionLabels).map(([k,label])=>{const selected=normalizeEmotion(values[k])||(k==='after'?'hesitant':'confident');return `<div class="emotion-field" data-emotion="${k}"><strong>${label}</strong><div class="emotion-choice-grid">${EMOTIONS.map(e=>`<button type="button" class="emotion-choice emotion-${e.id} ${selected===e.id?'selected':''}" data-value="${e.id}"><b>${e.mark}</b><span><strong>${e.label}</strong><small>${e.thai}</small></span></button>`).join('')}</div></div>`}).join(''); updateStatusFields(); }
+function renderEmotionForm(values={before:'confident',during:'confident',after:'satisfied'}){ $('#emotionForm').innerHTML=Object.entries(emotionLabels).map(([k,label])=>{const options=emotionOptions(k);const selected=normalizeEmotion(values[k],k)||(k==='after'?'satisfied':'confident');return `<div class="emotion-field" data-emotion="${k}"><strong>${label}</strong><div class="emotion-choice-grid">${options.map(e=>`<button type="button" class="emotion-choice emotion-${e.id} ${selected===e.id?'selected':''}" data-value="${e.id}"><b>${e.mark}</b><span><strong>${e.label}</strong><small>${e.thai}</small></span></button>`).join('')}</div></div>`}).join(''); updateStatusFields(); }
 function updateStatusFields(){ const pending=$('#tradeStatus').value==='pending';$('#pl').required=!pending;$('#plField').classList.toggle('is-disabled',pending);$('[data-emotion="after"]')?.classList.toggle('is-disabled',pending); }
 function openTrade(trade){
   $('#tradeForm').reset(); pendingImages=trade?.images?[...trade.images]:[]; $('#tradeId').value=trade?.id||''; $('#formTitle').textContent=trade?'ดูและแก้ไขบันทึก':'บันทึกเทรด';

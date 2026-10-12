@@ -255,9 +255,15 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .emotion-distribution i{position:relative}
 .emotion-distribution i+i{box-shadow:inset 1px 0 0 #03110d}
 .emotion-confident{color:#399275!important}.emotion-anxious{color:#b74c5e!important}.emotion-hesitant{color:#b98b48!important}.emotion-fomo{color:#7c6b9b!important}
+.emotion-satisfied{color:#45a982!important}.emotion-proud{color:#8a6aab!important}.emotion-disappointed{color:#c95166!important}.emotion-regretful{color:#d17a50!important}
 .emotion-distribution .emotion-confident{background:#399275}.emotion-distribution .emotion-anxious{background:#b74c5e}.emotion-distribution .emotion-hesitant{background:#b98b48}.emotion-distribution .emotion-fomo{background:#7c6b9b}
+.emotion-distribution .emotion-satisfied{background:#45a982}.emotion-distribution .emotion-proud{background:#8a6aab}.emotion-distribution .emotion-disappointed{background:#c95166}.emotion-distribution .emotion-regretful{background:#d17a50}
 .emotion-dot.emotion-confident{color:#399275!important}.emotion-dot.emotion-anxious{color:#b74c5e!important}.emotion-dot.emotion-hesitant{color:#b98b48!important}.emotion-dot.emotion-fomo{color:#7c6b9b!important}
-.emotion-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;padding:12px 0 18px;border-bottom:1px solid #20312b}
+.emotion-dot.emotion-satisfied{color:#45a982!important}.emotion-dot.emotion-proud{color:#8a6aab!important}.emotion-dot.emotion-disappointed{color:#c95166!important}.emotion-dot.emotion-regretful{color:#d17a50!important}
+.emotion-legends{padding:12px 0 18px;border-bottom:1px solid #20312b}
+.emotion-legend-group+.emotion-legend-group{margin-top:14px;padding-top:12px;border-top:1px solid #20312b}
+.emotion-legend-group>strong{display:block;margin-bottom:8px;color:#8f9993;font:600 8px "Noto Sans Thai",sans-serif;letter-spacing:.02em}
+.emotion-legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;padding:0;border:0}
 .emotion-legend span{display:flex;align-items:center;gap:7px;color:#aab2ad;font:500 9px "Space Grotesk",sans-serif}
 .emotion-legend i{display:block;width:7px;height:7px;border-radius:50%;background:currentColor}
 .emotion-insights{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}
@@ -271,7 +277,9 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .coach-note>span{color:#a38560}
 
 .emotion-choice.emotion-confident{--emotion-accent:#399275}.emotion-choice.emotion-anxious{--emotion-accent:#b74c5e}.emotion-choice.emotion-hesitant{--emotion-accent:#b98b48}.emotion-choice.emotion-fomo{--emotion-accent:#7c6b9b}
+.emotion-choice.emotion-satisfied{--emotion-accent:#45a982}.emotion-choice.emotion-proud{--emotion-accent:#8a6aab}.emotion-choice.emotion-disappointed{--emotion-accent:#c95166}.emotion-choice.emotion-regretful{--emotion-accent:#d17a50}
 .emotion-choice.emotion-confident>b{background:#399275}.emotion-choice.emotion-anxious>b{background:#b74c5e}.emotion-choice.emotion-hesitant>b{background:#b98b48}.emotion-choice.emotion-fomo>b{background:#7c6b9b}
+.emotion-choice.emotion-satisfied>b{background:#45a982}.emotion-choice.emotion-proud>b{background:#8a6aab}.emotion-choice.emotion-disappointed>b{background:#c95166}.emotion-choice.emotion-regretful>b{background:#d17a50}
 .emotion-choice.selected{background:#16302b}
 .form-actions .secondary-btn,.modal-head .icon-btn{color:#7f1535;border-color:#7f1535;background:#f2eded}
 .form-actions .secondary-btn:hover,.modal-head .icon-btn:hover{background:#390517;color:white}
