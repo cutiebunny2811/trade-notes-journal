@@ -209,7 +209,7 @@ input,select,textarea{min-height:44px;border-color:#c8cbc3;background:#fbfbf8;pa
 }
 
 body,button,input,select,textarea{font-family:"Space Grotesk","Noto Sans Thai",sans-serif}
-.eyebrow,.stat-card>span,.open-counter span,.trade-columns span,.trade-date,.sidebar-foot strong,.form-section-label small,.field>span,.coach-note strong,.emotion-sample,.emotion-insight-card>span,.emotion-insight-card>strong,.brand-copy small{font-family:"JetBrains Mono",monospace}
+.eyebrow,.stat-card>span,.open-counter span,.trade-columns span,.trade-date,.sidebar-foot strong,.form-section-label small,.field>span,.coach-note strong,.emotion-insight-card>span,.emotion-insight-card>strong,.brand-copy small{font-family:"JetBrains Mono",monospace}
 h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-item,.text-btn,.emotion-legend span,.emotion-choice span>strong{font-family:"Space Grotesk","Noto Sans Thai",sans-serif}
 .stat-card strong,.open-counter strong,.pl-cell,.trade-date strong,.trade-date span,.symbol-cell strong,.direction,.status-chip{font-family:"JetBrains Mono",monospace}
 
@@ -217,9 +217,11 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .brand{gap:11px;padding:0 4px;text-transform:none;letter-spacing:0}
 .brand-mark{width:40px;height:40px;border:1px solid #a38560;border-radius:10px;background:#0a1d17;color:#a38560;flex:0 0 auto}
 .brand-mark svg{width:32px;height:32px;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.brand-mark .logo-axis{stroke:#65736c;stroke-width:1.4}
-.brand-mark .logo-trend{stroke:#a38560;stroke-width:2.5}
-.brand-mark circle{fill:#e0e0e0;stroke:#390517;stroke-width:1.4}
+.brand-mark .logo-book{fill:none;stroke:#a38560;stroke-width:1.45}
+.brand-mark .logo-fold,.brand-mark .logo-rule{fill:none;stroke:#65736c;stroke-width:1.15}
+.brand-mark .logo-bullet{fill:#d8c5aa;stroke:none}
+.brand-mark .logo-trend{fill:none;stroke:#d8c5aa;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand-mark .logo-terminal{fill:#8e2d48;stroke:#e0e0e0;stroke-width:.7}
 .brand-copy{min-width:0;display:block}
 .brand-copy strong{display:block;color:#f2f2ee;font:700 13px/1 "Space Grotesk",sans-serif;white-space:nowrap}
 .brand-copy small{display:block;color:#748079;font-size:7px;letter-spacing:.12em;margin-top:6px;white-space:nowrap}
@@ -249,7 +251,6 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .emotion-summary-card{padding:12px 0;border-top-color:#20312b}
 .emotion-summary-card:last-child{border-bottom-color:#20312b}
 .emotion-line-head>strong{font-family:"Noto Sans Thai",sans-serif;font-size:12px;color:#d9dcda}
-.emotion-sample{font-size:8px;letter-spacing:.08em;color:#79857e}
 .emotion-distribution{height:9px;margin-top:9px;background:#14251f;border-radius:0}
 .emotion-distribution i{position:relative}
 .emotion-distribution i+i{box-shadow:inset 1px 0 0 #03110d}
@@ -284,70 +285,4 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
   .emotion-insights{grid-template-columns:1fr 1fr}
   .emotion-insight-card{padding:12px 10px}
   .emotion-insight-card>strong{font-size:15px}
-}
-
-/* Trade Notes v6 — Lime Journal / warm graphite system */
-:root{
-  --g-ink:#1b1d18;
-  --g-rail:#1b1d18;
-  --g-accent:#c8ff3d;
-}
-
-.sidebar{background:#1b1d18;border-right-color:#34382f}
-.brand{gap:12px}
-.brand-mark{width:44px;height:44px;border:0;border-radius:0;background:transparent;color:#c8ff3d}
-.brand-mark svg{width:44px;height:44px;overflow:visible}
-.brand-mark .logo-tile{fill:#c8ff3d;stroke:none}
-.brand-mark .logo-page{fill:#1b1d18;stroke:none}
-.brand-mark .logo-fold{fill:none;stroke:#7d876f;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
-.brand-mark .logo-bullet{fill:#c8ff3d;stroke:none}
-.brand-mark .logo-rule{fill:none;stroke:#73796a;stroke-width:1.6;stroke-linecap:round}
-.brand-mark .logo-trend{fill:none;stroke:#c8ff3d;stroke-width:2.45;stroke-linecap:round;stroke-linejoin:round}
-.brand-mark .logo-terminal{fill:#f3f4ed;stroke:none}
-.brand-copy strong{color:#f6f7f1;font-size:13px}
-.brand-copy small{color:#8f9688}
-.nav-item{color:#a3a99d}
-.nav-item:hover{background:#252821;color:#f5f7ef}
-.nav-item.active{background:#30342b;color:#fff}
-.nav-item.active::before{background:#c8ff3d}
-.nav-item.active .nav-icon{color:#c8ff3d}
-.sidebar-foot{border-color:#383c33}
-.sync-dot{background:#c8ff3d;box-shadow:0 0 0 4px #c8ff3d1f}
-.sidebar-foot strong{color:#9ca296}
-
-.primary-btn{background:#252821;border-bottom-color:#c8ff3d}
-.primary-btn:hover{background:#363a30}
-.primary-btn span{color:#c8ff3d}
-.primary-btn:focus-visible,.secondary-btn:focus-visible,.filter:focus-visible,.nav-item:focus-visible,.emotion-choice:focus-visible{outline-color:#9bc92e}
-.stat-card.main-stat{background:#30342b}
-.stat-card.main-stat strong.positive{color:#c8ff3d}
-.filter.active{background:#30342b}
-.input-combo button{background:#252821;border-color:#252821;color:#c8ff3d}
-
-.reflection-panel{background:#22251f;border-top-color:#c8ff3d}
-.reflection-panel>.eyebrow{color:#c8ff3d}
-.reflection-panel>.muted{color:#a5ab9f}
-.emotion-summary-card{border-top-color:#3b4036}
-.emotion-summary-card:last-child{border-bottom-color:#3b4036}
-.emotion-line-head>strong{color:#eef0e8}
-.emotion-sample{color:#a5ad9e}
-.emotion-distribution{background:#3a3f35}
-.emotion-distribution i+i{box-shadow:inset 1px 0 0 #22251f}
-.emotion-legend{border-bottom-color:#3b4036}
-.emotion-legend span{color:#c2c7bd}
-.emotion-insight-card{background:#2b2f27;border-color:#454a3f}
-.emotion-insight-card>span{color:#aab1a3}
-.emotion-insight-card>strong{color:#f4f5ef!important}
-.emotion-insight-card>small{color:#b9c0b3}
-.coach-note{border-top-color:#3b4036}
-.coach-note>span{color:#c8ff3d}
-.coach-note p{color:#b6bcaf}
-
-.emotion-choice.selected{background:#30342b}
-.modal-backdrop{background:#171914c7}
-
-@media(max-width:900px){
-  .sidebar{border-top-color:#383c33}
-  .brand-mark{border-radius:0}
-  .nav-item.active{background:#30342b}
 }
