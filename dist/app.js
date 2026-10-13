@@ -226,12 +226,13 @@ function renderExecutionHistory(trade){
   const rows=steps.map(fill=>{const editable=fill.source==='manual';return `<li class="execution-item"><strong>${escapeHTML(fill.label)}</strong><span class="fill-meta"><small>${escapeHTML(fillDateLabel(fill.executedAt))} · ${escapeHTML(fillNumber(fill.quantity))} หุ้น @ $${escapeHTML(fillNumber(fill.unitPrice,4))}</small><small class="fill-fees">ค่าธรรมเนียม $${escapeHTML(fillNumber(fill.fees))} · ไม่รวมในยอดซื้อ/ขาย</small></span><output>$${escapeHTML(fillNumber(fill.gross,2))}</output>${editable?`<span class="fill-row-actions"><button type="button" data-edit-fill="${escapeHTML(fill.id)}">แก้ไข</button><button type="button" data-delete-fill="${escapeHTML(fill.id)}">ลบไม้</button></span>`:'<span></span>'}</li>`}).join('');
   $('#executionHistoryBody').innerHTML=`<div class="execution-key"><span>MATCHKEY</span><code>${escapeHTML(trade.matchKey||`TN-${trade.id}`)}</code></div>${overview}${summaryError?`<p class="fill-error">${escapeHTML(summaryError)}</p>`:''}${rows?`<ol class="execution-list">${rows}</ol>`:'<p class="execution-empty">ยังไม่มีไม้ซื้อขาย บันทึกไม้แรกด้านล่างได้เลย</p>'}`;
 }
-function openTrade(trade){
+function openTrade(trade,showFills=false){
   $('#tradeForm').reset(); pendingImages=trade?.images?[...trade.images]:[]; $('#tradeId').value=trade?.id||''; $('#formTitle').textContent=trade?'ดูและแก้ไขบันทึก':'บันทึกเทรด';
   $('#assetClass').value=trade?tradeAsset(trade):(activeMarket==='all'?'gold':activeMarket);updateAssetFields();$('#tradeStyle').value=trade?.tradeStyle||'swing';
   $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
   $('#deleteTradeBtn').hidden=!trade;$('#entryMore').open=false;$('#executionHistory').open=false;$('#tradeForm button[type="submit"]').textContent=trade?'บันทึกการแก้ไข →':'บันทึก Journal →';
   renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions);resetFillEditor(trade);renderExecutionHistory(trade);renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
+  if(showFills&&trade&&tradeAsset(trade)==='stock'){$('#executionHistory').open=true;$('#executionHistory').scrollIntoView({block:'center'});}
 }
 function openModal(which){ $(`#${which}Modal`).classList.add('open'); $(`#${which}Modal`).setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
 function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); if(!$('.modal.open'))document.body.classList.remove('modal-open'); }
@@ -246,7 +247,7 @@ $('#tradeForm').addEventListener('submit',async e=>{
   try{
     const saved=await persistTrade(trade,old);trades=old?trades.map(t=>t.id===id?saved:t):[saved,...trades];
     save();render();
-    if(assetClass==='stock'&&!old){openTrade(saved);$('#executionHistory').open=true;$('#executionHistory').scrollIntoView({block:'center'});toast('บันทึกรายการหุ้นแล้ว เพิ่มไม้ด้านล่างได้เลย');}
+    if(assetClass==='stock'&&!old){openTrade(saved,true);toast('บันทึกรายการหุ้นแล้ว เพิ่มไม้ด้านล่างได้เลย');}
     else{closeModal('trade');toast(status==='pending'?'บันทึกเป็นออเดอร์กำลังถือแล้ว':'บันทึกเทรดแล้ว ✓');}
   }catch(error){
     if(error.code==='STALE_TRADE'){
@@ -297,7 +298,7 @@ $('#saveFillBtn').addEventListener('click',async()=>{
   }finally{button.disabled=false;}
 });
 $('#cancelFillEdit').addEventListener('click',()=>resetFillEditor(trades.find(t=>t.id===$('#tradeId').value)));
-$('#fillEditor').addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.tagName==='INPUT'){event.preventDefault();$('#saveFillBtn').click();}});
+$('#fillEditor').addEventListener('keydown',event=>{if(event.key==='Enter'&&['INPUT','SELECT'].includes(event.target.tagName)){event.preventDefault();$('#saveFillBtn').click();}});
 document.addEventListener('click',async event=>{
   const edit=event.target.closest('[data-edit-fill]'),remove=event.target.closest('[data-delete-fill]');
   if(!edit&&!remove)return;
@@ -338,8 +339,8 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#quickAddSetup'))openModal('setup');
   const nav=e.target.closest('.nav-item');if(nav){if(nav.dataset.view==='setups')openModal('setup');else setView(nav.dataset.view);}
   const emo=e.target.closest('.emotion-choice');if(emo){const wasSelected=emo.classList.contains('selected');$$('.emotion-choice',emo.parentElement).forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});if(!wasSelected){emo.classList.add('selected');emo.setAttribute('aria-pressed','true')}}
-  const row=e.target.closest('.trade-row');if(row)openTrade(trades.find(t=>t.id===row.dataset.id));
-  const review=e.target.closest('[data-review-trade]');if(review)openTrade(trades.find(t=>t.id===review.dataset.reviewTrade));
+  const row=e.target.closest('.trade-row');if(row)openTrade(trades.find(t=>t.id===row.dataset.id),true);
+  const review=e.target.closest('[data-review-trade]');if(review)openTrade(trades.find(t=>t.id===review.dataset.reviewTrade),true);
   const filter=e.target.closest('.filter');if(filter){activeFilter=filter.dataset.filter;$$('.filter').forEach(x=>x.classList.remove('active'));filter.classList.add('active');render();}
   const market=e.target.closest('.market-filter');if(market){activeMarket=market.dataset.market;$$('.market-filter').forEach(x=>{const selected=x===market;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));});render();}
   const del=e.target.closest('.delete-setup');if(del){const name=setups[Number(del.dataset.index)];if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');cloud.from('journal_setups').delete().eq('name',name).then(({error})=>{if(error)return toast(`ลบไม่สำเร็จ: ${error.message}`);setups.splice(setups.indexOf(name),1);save();render();});}
