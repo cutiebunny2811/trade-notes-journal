@@ -1,4 +1,5 @@
 import readline from "node:readline";
+import { createHash } from "node:crypto";
 
 const projectUrl = process.env.TRADE_NOTES_URL || "https://yfbbpertvtmwfadfldia.supabase.co";
 const publishableKey = process.env.TRADE_NOTES_PUBLISHABLE_KEY || "sb_publishable_-zWhSbG4lfuTqd1T6o2P4A_D_CveFwH";
@@ -11,9 +12,9 @@ const tools = [{
   inputSchema: {
     type: "object",
     additionalProperties: false,
-    required: ["sourceKey", "lane", "assetClass", "symbol", "direction", "action", "quantity", "unitPrice", "multiplier", "commission", "otherFees", "executedAt"],
+    required: ["lane", "assetClass", "symbol", "direction", "action", "quantity", "unitPrice", "multiplier", "commission", "otherFees", "executedAt"],
     properties: {
-      sourceKey: { type: "string", description: "Stable tg:<chat_id>:<message_id>:<fill_ordinal>, or broker:<stable_execution_id>." },
+      sourceKey: { type: "string", description: "Optional stable tg:<chat_id>:<message_id>:<fill_ordinal> if message metadata is actually available. Otherwise omit it; the adapter derives a deterministic key from the broker execution ID or visible fill facts." },
       brokerExecutionId: { type: "string", description: "Stable broker execution identity if visible. Prefix with broker name, for example webull:12345." },
       lane: { type: "string", enum: ["nut", "ging", "swing", "option", "gold"] },
       assetClass: { type: "string", enum: ["stock", "option", "gold"] },
@@ -44,6 +45,18 @@ const tools = [{
 
 async function callWriter(args) {
   if (!agentToken) throw new Error("Trade Notes writer is not configured");
+  const payload = { ...args };
+  if (!payload.sourceKey) {
+    const identity = payload.brokerExecutionId
+      ? ["execution", payload.brokerExecutionId]
+      : ["slip-fingerprint", payload.lane, payload.assetClass, payload.symbol,
+        payload.optionContract?.expiry, payload.optionContract?.strike,
+        payload.optionContract?.right, payload.direction, payload.action,
+        payload.quantity, payload.unitPrice, payload.multiplier,
+        payload.commission, payload.otherFees, payload.executedAt];
+    const prefix = payload.brokerExecutionId ? "execution" : "slipfp";
+    payload.sourceKey = `broker:${prefix}-${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}`;
+  }
   const target = new URL("/rest/v1/rpc/api_tsuki_record_fill", projectUrl);
   if (!(target.protocol === "https:" && target.hostname.endsWith(".supabase.co")) &&
       !(target.protocol === "http:" && ["127.0.0.1", "localhost"].includes(target.hostname))) {
@@ -55,7 +68,7 @@ async function callWriter(args) {
     const response = await fetch(target, {
       method: "POST",
       headers: { apikey: publishableKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ p_token: agentToken, p_payload: args }),
+      body: JSON.stringify({ p_token: agentToken, p_payload: payload }),
       signal: controller.signal,
     });
     const body = await response.json().catch(() => ({ message: "Invalid response from Trade Notes" }));

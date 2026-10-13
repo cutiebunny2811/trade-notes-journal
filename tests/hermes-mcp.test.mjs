@@ -67,3 +67,31 @@ test("sends a confirmed fill to the exact RPC and returns its read-back", async 
     http.close();
   }
 });
+
+test("derives a stable source key when Telegram does not expose message metadata", async () => {
+  const sources = [];
+  const http = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    sources.push(JSON.parse(Buffer.concat(chunks).toString()).p_payload.sourceKey);
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ duplicate: sources.length > 1 }));
+  });
+  await new Promise((resolve) => http.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = http.address();
+    const env = { TRADE_NOTES_AGENT_TOKEN: token, TRADE_NOTES_URL: `http://127.0.0.1:${port}` };
+    const withoutSource = { ...sample };
+    delete withoutSource.sourceKey;
+    await runAdapter(env, [{ jsonrpc: "2.0", id: 4, method: "tools/call", params: {
+      name: "record_confirmed_trade_fill", arguments: withoutSource,
+    } }]);
+    await runAdapter(env, [{ jsonrpc: "2.0", id: 5, method: "tools/call", params: {
+      name: "record_confirmed_trade_fill", arguments: withoutSource,
+    } }]);
+    assert.match(sources[0], /^broker:slipfp-[a-f0-9]{64}$/);
+    assert.equal(sources[0], sources[1]);
+  } finally {
+    http.close();
+  }
+});

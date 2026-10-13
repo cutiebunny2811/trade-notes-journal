@@ -16,7 +16,7 @@ let stderr = "";
 child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
 child.stdin.write(`${JSON.stringify({
   jsonrpc: "2.0", id: 1, method: "tools/call",
-  params: { name: "record_confirmed_trade_fill", arguments: { sourceKey: "broker:smoke-reject" } },
+  params: { name: "record_confirmed_trade_fill", arguments: {} },
 })}\n`);
 for await (const line of lines) {
   response = JSON.parse(line);
