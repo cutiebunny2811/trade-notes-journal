@@ -215,15 +215,16 @@ function resetFillEditor(trade){
 }
 function renderExecutionHistory(trade){
   const panel=$('#executionHistory'),fills=Array.isArray(trade?.fills)?trade.fills:[];
-  panel.hidden=!trade||(tradeAsset(trade)!=='stock'&&!trade.matchKey&&!fills.length);
+  const asset=trade?tradeAsset(trade):null,unit=asset==='option'?'สัญญา':asset==='gold'?'หน่วย':'หุ้น';
+  panel.hidden=!trade||(asset!=='stock'&&!fills.length);
   if(panel.hidden)return;
   $('#fillEditor').hidden=tradeAsset(trade)!=='stock';
   $('#executionHistoryTitle').textContent=fills.length?`ไม้ซื้อ–ขาย · ${fills.length} รายการ`:'ไม้ซื้อ–ขาย · ยังไม่มีไม้';
   let summary=null,summaryError='';
   if(fills.length)try{summary=TradeFillMath.summarize(trade,fills);}catch(error){summaryError=error.message;}
-  const overview=summary?`<div class="execution-summary"><div><small>คงเหลือ</small><strong>${fillNumber(summary.openQuantity)} หุ้น</strong></div><div><small>ทุนเฉลี่ยต่อหุ้น</small><strong>${summary.averageEntry===null?'—':'$'+fillNumber(summary.averageEntry,4)}</strong></div><div><small>กำไรที่ปิดแล้ว</small><strong class="${summary.realizedPl<0?'is-loss':''}">${money(summary.realizedPl)}</strong></div></div>`:'';
+  const overview=summary?`<div class="execution-summary"><div><small>คงเหลือ</small><strong>${fillNumber(summary.openQuantity)} ${unit}</strong></div><div><small>ทุนเฉลี่ยต่อ${unit}</small><strong>${summary.averageEntry===null?'—':'$'+fillNumber(summary.averageEntry,4)}</strong></div><div><small>กำไรที่ปิดแล้ว</small><strong class="${summary.realizedPl<0?'is-loss':''}">${money(summary.realizedPl)}</strong></div></div>`:'';
   const steps=summary?.steps||fills.map(fill=>({...fill,label:fill.action==='sell'?'ขาย':'ซื้อ',gross:Number(fill.quantity)*Number(fill.unitPrice),fees:Number(fill.commission||0)+Number(fill.otherFees||0)}));
-  const rows=steps.map(fill=>{const editable=fill.source==='manual';return `<li class="execution-item"><strong>${escapeHTML(fill.label)}</strong><span class="fill-meta"><small>${escapeHTML(fillDateLabel(fill.executedAt))} · ${escapeHTML(fillNumber(fill.quantity))} หุ้น @ $${escapeHTML(fillNumber(fill.unitPrice,4))}</small><small class="fill-fees">ค่าธรรมเนียม $${escapeHTML(fillNumber(fill.fees))} · ไม่รวมในยอดซื้อ/ขาย</small></span><output>$${escapeHTML(fillNumber(fill.gross,2))}</output>${editable?`<span class="fill-row-actions"><button type="button" data-edit-fill="${escapeHTML(fill.id)}">แก้ไข</button><button type="button" data-delete-fill="${escapeHTML(fill.id)}">ลบไม้</button></span>`:'<span></span>'}</li>`}).join('');
+  const rows=steps.map(fill=>{const editable=fill.source==='manual';return `<li class="execution-item"><strong>${escapeHTML(fill.label)}</strong><span class="fill-meta"><small>${escapeHTML(fillDateLabel(fill.executedAt))} · ${escapeHTML(fillNumber(fill.quantity))} ${unit} @ $${escapeHTML(fillNumber(fill.unitPrice,4))}${Number(fill.multiplier||1)!==1?' × '+escapeHTML(fillNumber(fill.multiplier,0)):''}</small><small class="fill-fees">ค่าธรรมเนียม $${escapeHTML(fillNumber(fill.fees))} · ไม่รวมในยอดซื้อ/ขาย</small></span><output>$${escapeHTML(fillNumber(fill.gross,2))}</output>${editable?`<span class="fill-row-actions"><button type="button" data-edit-fill="${escapeHTML(fill.id)}">แก้ไข</button><button type="button" data-delete-fill="${escapeHTML(fill.id)}">ลบไม้</button></span>`:'<span></span>'}</li>`}).join('');
   $('#executionHistoryBody').innerHTML=`<div class="execution-key"><span>MATCHKEY</span><code>${escapeHTML(trade.matchKey||`TN-${trade.id}`)}</code></div>${overview}${summaryError?`<p class="fill-error">${escapeHTML(summaryError)}</p>`:''}${rows?`<ol class="execution-list">${rows}</ol>`:'<p class="execution-empty">ยังไม่มีไม้ซื้อขาย บันทึกไม้แรกด้านล่างได้เลย</p>'}`;
 }
 function openTrade(trade,showFills=false){
@@ -232,7 +233,7 @@ function openTrade(trade,showFills=false){
   $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
   $('#deleteTradeBtn').hidden=!trade;$('#entryMore').open=false;$('#executionHistory').open=false;$('#tradeForm button[type="submit"]').textContent=trade?'บันทึกการแก้ไข →':'บันทึก Journal →';
   renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions);resetFillEditor(trade);renderExecutionHistory(trade);renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
-  if(showFills&&trade&&tradeAsset(trade)==='stock'){$('#executionHistory').open=true;$('#executionHistory').scrollIntoView({block:'center'});}
+  if(showFills&&trade&&(tradeAsset(trade)==='stock'||trade.fills?.length)){$('#executionHistory').open=true;$('#executionHistory').scrollIntoView({block:'center'});}
 }
 function openModal(which){ $(`#${which}Modal`).classList.add('open'); $(`#${which}Modal`).setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
 function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); if(!$('.modal.open'))document.body.classList.remove('modal-open'); }

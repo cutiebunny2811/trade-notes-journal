@@ -38,13 +38,17 @@ A saved stock trade can contain a `data.fills` array. Each fill has `id` (UUID),
 
 The browser calculates realized P/L with **weighted-average cost**: gross is quantity × unit price × multiplier; opening fees are added to long cost (or subtracted from short proceeds), and closing fees are deducted at exit. The journal is `pending` while shares remain and `closed` only when all shares have exited. A partial exit's realized P/L is visible in the execution detail but is not included in closed-trade Insights. This is a journal performance method, not tax-lot accounting. If all fills are deleted, the trade returns to pending with unknown P/L. Manual fills reuse the existing private `journal_trades` JSON row and its RLS; they do not need the separate ledger migration.
 
-## Execution ledger (prepared, not yet live)
+## Tsuki writer (separate deployment)
 
-`supabase/migrations/20261014000000_journal_fills.sql` defines private `journal_fills`, with one row per confirmed broker fill, linked to a journal trade. It records `side`, `quantity`, `unit_price`, `multiplier`, `commission`, `other_fees`, `executed_at`, original broker time text, and optional private evidence path. Gross BUY/SELL is `quantity × unit_price × multiplier` (100 for a standard equity option contract); fees stay separate. A per-user unique `source_key` prevents replaying the same fill. The stable `matchKey` belongs to the trade, not to a Telegram message. `broker_execution_id`, when present, is the preferred fill identity; otherwise the bot must use a stable message identity plus a fill ordinal. If the same broker fill is forwarded in another message, the bot must detect that before writing.
+`supabase/migrations/20261015000000_tsuki_writer.sql` is the deployment for Tsuki. It keeps `journal_trades.data.fills` as the sole execution source read by the existing app, adding a private agent-token table, private idempotency receipts, and an atomic `api_tsuki_record_fill` RPC. The RPC verifies a revocable random token, owner, route, exact contract, source identity, possible forwarded duplicate, matching open trade, position quantity and fees before changing the journal. It recalculates weighted-average P/L and reads the inserted fill back within the same database transaction. The browser's optimistic `updated_at` check prevents a stale manual save from overwriting a new bot fill. Bot fills are read-only in the current form; correcting one requires a separately designed correction path, not a duplicate append.
 
-The migration file is only a repository artifact until it has been applied to the live Supabase project. Do not enable a bot writer before deploying and verifying it. The existing app continues to save quick journal entries using `journal_trades` alone.
+This migration and `hermes-mcp/server.mjs` have to be deployed/configured before any Telegram prompt is switched from Google Sheets. The public publishable key permits calling the RPC but cannot authorize a write without the separate Tsuki token. Store that token only in Hermes' private profile configuration; never in the app, GitHub, or a chat message.
 
-Before moving bot writes to `journal_fills`, copy any existing manual `data.fills` exactly once into that table with their stable source keys, verify each trade's count and calculated totals, and switch the reader to a single ledger-backed projection. Never display both copies as two executions.
+## Earlier ledger proposal (not deployed)
+
+`supabase/migrations/20261014000000_journal_fills.sql` is an earlier, unapplied normalized-ledger proposal. Do not apply it alongside the current Tsuki writer; doing so would introduce a second execution source without migrating the browser reader. A later ledger migration would need a one-time copy of existing `data.fills` and one canonical projection.
+
+The migration files are repository artifacts until explicitly applied to Supabase. Do not enable a bot writer before deploying and verifying the chosen migration.
 
 ## Hermes handoff
 
