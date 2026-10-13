@@ -4,6 +4,8 @@ Personal trading journal for gold, stocks, options, and crypto. Save pending or 
 
 The entry form is quick-first: asset, symbol, holding style, status, direction, and a short note stay visible; date, setup, emotions, and screenshots are optional details. New entries do not silently select a setup or emotion. A stable `matchKey` is assigned when a manual entry is saved, and bot-managed execution fields are preserved when a note is edited.
 
+For stocks, save the quick entry, open its Journal row, then expand **ไม้ซื้อ–ขาย**. Add, edit, or remove buy/sell executions with quantity, price, time, and separate fees. The list labels ซื้อไม้ 1 / ซื้อไม้ 2 / ขายบางส่วน / ขายปิดครบ and shows remaining shares, weighted-average entry cost, and realized P/L. A fully closed position sets journal P/L automatically; a partial sale stays open and is excluded from closed-trade Insights. One completed position cycle gets one MatchKey; entering again after a full exit requires a new journal entry. This manual feature uses the existing authenticated `journal_trades` row and is live without a database migration. No Google Sheet history is imported.
+
 The app is a static app in `dist/`, backed by Supabase Authentication, Postgres, and a private Storage bucket. GitHub Pages publishes `dist/` at https://cutiebunny2811.github.io/trade-notes-journal/ through `.github/workflows/deploy-pages.yml`; the earlier Codex Site remains available at https://trade-notes-journal.politecalf32.chatgpt.site/. The public Supabase publishable key in `dist/app.js` is intentionally client-side; access to journal data and screenshots is restricted by Row Level Security policies in `supabase/migrations/20261013000000_trade_notes.sql`. Never place a Supabase secret or service-role key in this repository or browser code.
 
 ## Development
@@ -16,10 +18,10 @@ On the first authenticated visit in the original browser, the app imports any `t
 
 ## Data model
 
-- `journal_trades`: one JSON document per trade, owned by `user_id`.
+- `journal_trades`: one JSON document per trade, owned by `user_id`. Manual stock executions are currently stored in its `data.fills` array with stable fill IDs and source keys.
 - `journal_setups`: editable setup names, owned by `user_id`.
 - `trade-images` Storage bucket: private screenshots under `<user_id>/<trade_id>/<image_id>.jpg`; the browser uses time-limited signed URLs for display.
 
 Trade JSON now includes `assetClass` (`gold`, `stock`, `option`, `crypto`) and optional `tradeStyle` (`swing`, `day`, `position`) for stocks/options. Existing records without `assetClass` remain readable and are classified in the UI by symbol; they are not rewritten until edited. See [docs/journal-schema.md](docs/journal-schema.md) for the format and future Hermes integration boundary. The Insights “ส่งออก JSON” control downloads a private copy of all entries and setups, without signed image URLs; treat the export as sensitive personal data.
 
-The bot execution ledger is prepared in `supabase/migrations/20261014000000_journal_fills.sql` but is **not live until that migration is applied and verified**. Tsuki is not connected by this release. See [docs/tsuki-workflow.md](docs/tsuki-workflow.md) for routing, deduplication, automatic-write rules, and the no-confirmation path for unambiguous confirmed fills.
+The separate bot execution ledger is prepared in `supabase/migrations/20261014000000_journal_fills.sql` but is **not live until that migration is applied and verified**. Tsuki is not connected by this release. Before enabling bot writes, migrate any manual `data.fills` to the ledger once, then read both sources through one projection and verify totals. See [docs/tsuki-workflow.md](docs/tsuki-workflow.md) for routing, deduplication, automatic-write rules, and the no-confirmation path for unambiguous confirmed fills.
