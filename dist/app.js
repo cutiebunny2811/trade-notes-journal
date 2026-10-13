@@ -195,7 +195,7 @@ function openTrade(trade){
   $('#assetClass').value=trade?tradeAsset(trade):(activeMarket==='all'?'gold':activeMarket);updateAssetFields();$('#tradeStyle').value=trade?.tradeStyle||'swing';
   $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
   $('#deleteTradeBtn').hidden=!trade;
-  renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions); renderPreviews(); openModal('trade');
+  renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions); renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
 }
 function openModal(which){ $(`#${which}Modal`).classList.add('open'); $(`#${which}Modal`).setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
 function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); if(!$('.modal.open'))document.body.classList.remove('modal-open'); }
