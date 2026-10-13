@@ -22,6 +22,8 @@
 .execution-item output{font:600 11px "JetBrains Mono",monospace;text-align:right}
 .execution-empty{margin:0;color:var(--g-muted,#727870);font-size:11px}
 @media(max-width:640px){
+  .trade-form-card .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trade-form-card .form-grid .span-2,.trade-form-card #tradeStyleField{grid-column:1 / -1}
   .entry-more>summary,.execution-history>summary{padding:13px 20px}
   .entry-more>summary small,.execution-history>summary small{display:none}
   .execution-history #executionHistoryBody{padding:16px 20px}
