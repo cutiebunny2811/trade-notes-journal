@@ -1,0 +1,30 @@
+/* Quick journal: preserve the existing Trade Notes palette and selectors. */
+.trade-form-card .quick-note-field textarea{min-height:66px;resize:vertical;line-height:1.55}
+.quick-entry-hint{margin:14px 0 0;color:var(--g-muted,#727870);font-size:11px}
+#plField[hidden],#executionHistory[hidden]{display:none}
+.entry-more,.execution-history{border-bottom:1px solid var(--g-rule,#c8cbc3)}
+.entry-more>summary,.execution-history>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:14px 24px;cursor:pointer;background:#eeefe9;color:var(--g-ink,#0b1b16)}
+.entry-more>summary::-webkit-details-marker,.execution-history>summary::-webkit-details-marker{display:none}
+.entry-more>summary span,.execution-history>summary span{font-weight:700;font-size:13px}
+.entry-more>summary small,.execution-history>summary small{color:var(--g-muted,#727870);font-size:10px;margin-left:auto}
+.entry-more>summary::after,.execution-history>summary::after{content:'+';display:grid;place-items:center;width:26px;height:26px;flex:none;border:1px solid #aeb6aa;font:18px/1 "JetBrains Mono",monospace}
+.entry-more[open]>summary::after,.execution-history[open]>summary::after{content:'−'}
+.entry-more>summary:hover,.execution-history>summary:hover{background:#e7e9e1}
+.entry-more>summary:focus-visible,.execution-history>summary:focus-visible{outline:2px solid #a98a55;outline-offset:-3px}
+.entry-more .form-section:last-child{border-bottom:0}
+.execution-history #executionHistoryBody{padding:18px 24px 22px;background:#f5f5f0}
+.execution-key{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px;color:var(--g-muted,#727870);font-size:11px}
+.execution-key code{font:10px/1.5 "JetBrains Mono",monospace;color:var(--g-ink,#0b1b16);overflow-wrap:anywhere}
+.execution-list{display:grid;gap:0;border-top:1px solid var(--g-rule,#c8cbc3)}
+.execution-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--g-rule,#c8cbc3);font-size:11px}
+.execution-item strong{font-family:"Space Grotesk","Noto Sans Thai",sans-serif}
+.execution-item small{color:var(--g-muted,#727870)}
+.execution-item output{font:600 11px "JetBrains Mono",monospace;text-align:right}
+.execution-empty{margin:0;color:var(--g-muted,#727870);font-size:11px}
+@media(max-width:640px){
+  .entry-more>summary,.execution-history>summary{padding:13px 20px}
+  .entry-more>summary small,.execution-history>summary small{display:none}
+  .execution-history #executionHistoryBody{padding:16px 20px}
+  .execution-item{grid-template-columns:auto minmax(0,1fr)}
+  .execution-item output{grid-column:2;text-align:left}
+}

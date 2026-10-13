@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="fixes.css" />
   <link rel="stylesheet" href="gridgeist.css" />
+  <link rel="stylesheet" href="quick-entry.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -134,31 +135,44 @@
       <form id="tradeForm">
         <input type="hidden" id="tradeId" />
         <div class="form-section">
-          <div class="form-section-label"><span>01</span><div><strong>รายละเอียดออเดอร์</strong><small>WHAT DID YOU TRADE?</small></div></div>
+          <div class="form-section-label"><span>01</span><div><strong>จดแบบง่าย</strong><small>QUICK JOURNAL</small></div></div>
           <div class="form-grid">
             <label class="field span-2"><span>ประเภทสินทรัพย์</span><select id="assetClass" required><option value="gold">ทอง / GOLD</option><option value="stock">หุ้น / STOCK</option><option value="option">ออปชั่น / OPTIONS</option><option value="crypto">คริปโต / CRYPTO</option></select></label>
             <label class="field span-2"><span id="symbolLabel">SYMBOL / คู่เทรด</span><input id="symbol" placeholder="เช่น XAUUSD" required autocomplete="off" /></label>
             <label class="field span-2" id="tradeStyleField" hidden><span>รูปแบบการเทรด</span><select id="tradeStyle"><option value="swing">Swing trade</option><option value="day">Day trade</option><option value="position">Position trade</option></select></label>
             <label class="field"><span>ORDER STATUS</span><select id="tradeStatus"><option value="pending">กำลังถือ / PENDING</option><option value="closed">ปิดออเดอร์แล้ว</option></select></label>
             <label class="field"><span>DIRECTION</span><select id="direction"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></label>
-            <label class="field"><span>DATE & TIME</span><input id="tradeDate" type="datetime-local" required /></label>
-            <label class="field" id="plField"><span>P/L (USD)</span><input id="pl" type="number" step="0.01" placeholder="เช่น 125.50 หรือ -40" /></label>
-            <label class="field"><span>SETUP</span><div class="input-combo"><select id="setup"></select><button type="button" id="quickAddSetup" aria-label="เพิ่ม Setup">＋</button></div></label>
+            <label class="field span-2" id="plField" hidden><span>P/L (USD)</span><input id="pl" type="number" step="0.01" placeholder="เช่น 125.50 หรือ -40" /></label>
+            <label class="field span-2 quick-note-field"><span>โน้ตสั้น ๆ (ไม่บังคับ)</span><textarea id="notes" rows="2" placeholder="เหตุผลที่เข้า หรือเรื่องที่อยากกลับมาทบทวน"></textarea></label>
           </div>
+          <p class="quick-entry-hint">บันทึกเท่านี้ได้เลย · รายละเอียดอื่นเพิ่มทีหลังได้</p>
         </div>
-        <div class="form-section">
-          <div class="form-section-label"><span>02</span><div><strong>อารมณ์ตอนเทรด</strong><small>TRADING EMOTIONS</small></div></div>
-          <div class="emotion-form" id="emotionForm"></div>
-        </div>
-        <div class="form-section">
-          <div class="form-section-label"><span>03</span><div><strong>ภาพและบันทึก</strong><small>CAPTURE THE CONTEXT</small></div></div>
-          <label class="upload-zone" for="screenshots">
-            <input id="screenshots" type="file" accept="image/*" multiple />
-            <span class="upload-icon">↥</span><strong>แตะเพื่อเพิ่มภาพออเดอร์</strong><small>รองรับภาพจากมือถือ สูงสุด 3 ภาพ</small>
-          </label>
-          <div class="image-previews" id="imagePreviews"></div>
-          <label class="field notes-field"><span>NOTE / สิ่งที่ได้เรียนรู้</span><textarea id="notes" rows="3" placeholder="ทำอะไรได้ดี? ครั้งหน้าจะปรับอะไร?"></textarea></label>
-        </div>
+        <details class="entry-more" id="entryMore">
+          <summary><span>รายละเอียดเพิ่มเติม</span><small>วันที่ · Setup · อารมณ์ · ภาพออเดอร์</small></summary>
+          <div class="form-section">
+            <div class="form-section-label"><span>02</span><div><strong>ข้อมูลประกอบ</strong><small>OPTIONAL DETAILS</small></div></div>
+            <div class="form-grid">
+            <label class="field"><span>DATE & TIME</span><input id="tradeDate" type="datetime-local" required /></label>
+            <label class="field"><span>SETUP</span><div class="input-combo"><select id="setup"></select><button type="button" id="quickAddSetup" aria-label="เพิ่ม Setup">＋</button></div></label>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-label"><span>03</span><div><strong>อารมณ์ตอนเทรด</strong><small>เลือกเฉพาะที่คุณรู้จริง</small></div></div>
+            <div class="emotion-form" id="emotionForm"></div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-label"><span>04</span><div><strong>ภาพออเดอร์</strong><small>CAPTURE THE CONTEXT</small></div></div>
+            <label class="upload-zone" for="screenshots">
+              <input id="screenshots" type="file" accept="image/*" multiple />
+              <span class="upload-icon">↥</span><strong>แตะเพื่อเพิ่มภาพออเดอร์</strong><small>รองรับภาพจากมือถือ สูงสุด 3 ภาพ</small>
+            </label>
+            <div class="image-previews" id="imagePreviews"></div>
+          </div>
+        </details>
+        <details class="execution-history" id="executionHistory" hidden>
+          <summary><span>ข้อมูลซื้อ–ขายเบื้องหลัง</span><small>ดู MatchKey และไม้ที่บันทึกไว้</small></summary>
+          <div id="executionHistoryBody"></div>
+        </details>
         <div class="form-actions"><button type="button" class="delete-trade-btn" id="deleteTradeBtn" hidden>ลบรายการ</button><button type="button" class="secondary-btn" data-close="trade">ยกเลิก</button><button type="submit" class="primary-btn">บันทึก Journal →</button></div>
       </form>
     </div>

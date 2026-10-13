@@ -2,6 +2,8 @@
 
 Personal trading journal for gold, stocks, options, and crypto. Save pending or closed positions, P/L in USD, editable setups, emotions through the trade, and order screenshots. Entries can be edited or deleted with confirmation; deleting an entry also removes its linked screenshots. The journal screener filters by asset class, symbol, and status. The Insights view compares market, setup, symbol, entry emotion, and holding style, and opens trades needing review.
 
+The entry form is quick-first: asset, symbol, holding style, status, direction, and a short note stay visible; date, setup, emotions, and screenshots are optional details. New entries do not silently select a setup or emotion. A stable `matchKey` is assigned when a manual entry is saved, and bot-managed execution fields are preserved when a note is edited.
+
 The app is a static app in `dist/`, backed by Supabase Authentication, Postgres, and a private Storage bucket. GitHub Pages publishes `dist/` at https://cutiebunny2811.github.io/trade-notes-journal/ through `.github/workflows/deploy-pages.yml`; the earlier Codex Site remains available at https://trade-notes-journal.politecalf32.chatgpt.site/. The public Supabase publishable key in `dist/app.js` is intentionally client-side; access to journal data and screenshots is restricted by Row Level Security policies in `supabase/migrations/20261013000000_trade_notes.sql`. Never place a Supabase secret or service-role key in this repository or browser code.
 
 ## Development
@@ -19,3 +21,5 @@ On the first authenticated visit in the original browser, the app imports any `t
 - `trade-images` Storage bucket: private screenshots under `<user_id>/<trade_id>/<image_id>.jpg`; the browser uses time-limited signed URLs for display.
 
 Trade JSON now includes `assetClass` (`gold`, `stock`, `option`, `crypto`) and optional `tradeStyle` (`swing`, `day`, `position`) for stocks/options. Existing records without `assetClass` remain readable and are classified in the UI by symbol; they are not rewritten until edited. See [docs/journal-schema.md](docs/journal-schema.md) for the format and future Hermes integration boundary. The Insights “ส่งออก JSON” control downloads a private copy of all entries and setups, without signed image URLs; treat the export as sensitive personal data.
+
+The bot execution ledger is prepared in `supabase/migrations/20261014000000_journal_fills.sql` but is **not live until that migration is applied and verified**. Tsuki is not connected by this release. The intended later workflow is confirmed fill slip → deduplicate and match trade → write and read back automatically, with no user confirmation step when unambiguous; unclear matches must stop and ask.

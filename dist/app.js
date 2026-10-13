@@ -52,19 +52,29 @@ async function prepareRemoteTrade(trade,old,importing=false){
 }
 async function persistTrade(trade,old,importing=false){
   const prepared=await prepareRemoteTrade(trade,old,importing);
-  const {images,imagePaths,...clean}=prepared;
-  const {error}=await cloud.from('journal_trades').upsert({id:trade.id,user_id:cloudUser.id,data:{...clean,imagePaths},updated_at:new Date().toISOString()});if(error)cloudError(error);
-  return {...trade,imagePaths};
+  const {images,imagePaths,updatedAt,...clean}=prepared;
+  const update={data:{...clean,imagePaths},updated_at:new Date().toISOString()};
+  let result;
+  if(old?.updatedAt&&!importing){
+    result=await cloud.from('journal_trades').update(update).eq('id',trade.id).eq('user_id',cloudUser.id).eq('updated_at',old.updatedAt).select('updated_at').maybeSingle();
+    if(result.error)cloudError(result.error);
+    if(!result.data){const conflict=new Error('รายการนี้มีข้อมูลใหม่จากอีกที่แล้ว กรุณาเปิดบันทึกอีกครั้ง');conflict.code='STALE_TRADE';throw conflict;}
+  }else{
+    result=await cloud.from('journal_trades').insert({id:trade.id,user_id:cloudUser.id,...update}).select('updated_at').single();
+    if(result.error)cloudError(result.error);
+  }
+  return {...trade,imagePaths,updatedAt:result.data.updated_at};
 }
 async function loadCloud(){
   if(!cloudUser)return;
   const [{data:remoteTrades,error:tradeError},{data:remoteSetups,error:setupError}]=await Promise.all([
-    cloud.from('journal_trades').select('id,data').order('created_at',{ascending:false}),
+    cloud.from('journal_trades').select('id,data,updated_at').order('created_at',{ascending:false}),
     cloud.from('journal_setups').select('name').order('created_at',{ascending:true})
   ]);
   if(tradeError)cloudError(tradeError);if(setupError)cloudError(setupError);
   const previousOwner=localStorage.getItem('trade-notes:cloud-owner');
-  const canImport=!previousOwner||previousOwner===cloudUser.id;
+  // Import local-only data once; otherwise a deleted cloud trade could be recreated from stale cache.
+  const canImport=!previousOwner;
   const localTrades=canImport?[...trades]:[],localSetups=canImport?[...setups]:[];
   if(canImport&&!localStorage.getItem('trade-notes:v1:pre-cloud-backup')){
     const original=localStorage.getItem(STORAGE.trades);
@@ -76,10 +86,10 @@ async function loadCloud(){
   const remoteNames=new Set(remoteSetups.map(row=>row.name));
   for(const name of localSetups.filter(name=>!remoteNames.has(name))){const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error&&error.code!=='23505')cloudError(error);}
   const [{data:allTrades,error:reloadError},{data:allSetups,error:reloadSetupError}]=await Promise.all([
-    cloud.from('journal_trades').select('id,data').order('created_at',{ascending:false}),cloud.from('journal_setups').select('name').order('created_at',{ascending:true})
+    cloud.from('journal_trades').select('id,data,updated_at').order('created_at',{ascending:false}),cloud.from('journal_setups').select('name').order('created_at',{ascending:true})
   ]);
   if(reloadError)cloudError(reloadError);if(reloadSetupError)cloudError(reloadSetupError);
-  trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
+  trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,updatedAt:row.updated_at,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
   setups=allSetups.map(row=>row.name);
   cloudReady=true;localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);render();
   $('#authGate').hidden=true;$('#syncStatus').textContent='DATA · SUPABASE';$('#signOutBtn').hidden=false;
@@ -93,6 +103,7 @@ async function acceptSession(session){
   try{await loadCloud();}catch(error){$('#authGate').hidden=false;$('#authMessage').textContent=`โหลดข้อมูลไม่สำเร็จ: ${error.message}`;}finally{loadingUserId=null;}
 }
 function money(n){ const abs = Math.abs(Number(n)); return `${n > 0 ? '+' : n < 0 ? '−' : ''}$${abs.toLocaleString('en-US',{maximumFractionDigits:2})}`; }
+function hasKnownPL(trade){ return trade.status!=='pending'&&trade.pl!==null&&trade.pl!==undefined&&Number.isFinite(Number(trade.pl)); }
 function emotionOptions(stage){ return stage==='after'?EXIT_EMOTIONS:TRADE_EMOTIONS; }
 function normalizeEmotion(value,stage='before'){
   const options=emotionOptions(stage);if(options.some(e=>e.id===value))return value;if(value==null)return null;
@@ -126,35 +137,36 @@ function updateAssetFields(){
 
 function render(){
   const scope=scopedTrades();
-  const filtered=scope.filter(t=>activeFilter==='all'||(activeFilter==='pending'?(t.status==='pending'):(t.status!=='pending'&&(activeFilter==='win'?t.pl>=0:t.pl<0)))).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filtered=scope.filter(t=>activeFilter==='all'||(activeFilter==='pending'?(t.status==='pending'):(hasKnownPL(t)&&(activeFilter==='win'?t.pl>=0:t.pl<0)))).sort((a,b)=>new Date(b.date)-new Date(a.date));
   $('#tradeList').innerHTML=filtered.map(t=>{const d=dateParts(t.date);return `<article class="trade-row" data-id="${t.id}">
     <div class="trade-date"><strong>${d.day}</strong><span>${d.month}</span></div>
     <div class="symbol-cell"><strong>${escapeHTML(t.symbol)} <span class="direction ${t.direction.toLowerCase()}">${t.direction}</span>${t.status==='pending'?'<span class="status-chip">PENDING</span>':''}</strong><small><span class="asset-tag">${assetLabel(tradeAsset(t))}</span>${t.tradeStyle?`<span class="style-tag">${escapeHTML(t.tradeStyle)}</span>`:''}${d.time} น.</small></div>
     <div class="setup-cell"><span class="setup-chip">${escapeHTML(t.setup||'No setup')}</span></div>
     <div class="emotion-triplet">${emotionMini(t.emotions?.before,'before','ก่อนเข้า')}${emotionMini(t.emotions?.during,'during','ระหว่างถือ')}${emotionMini(t.emotions?.after,'after','หลังปิด')}</div>
-    <div class="pl-cell ${t.status==='pending'?'pending-pl':(t.pl>=0?'win':'loss')}">${t.status==='pending'?'กำลังถือ':money(t.pl)}</div>
+    <div class="pl-cell ${t.status==='pending'?'pending-pl':(!hasKnownPL(t)?'pending-pl':(t.pl>=0?'win':'loss'))}">${t.status==='pending'?'กำลังถือ':(hasKnownPL(t)?money(t.pl):'รอต้นทุน')}</div>
     <div class="thumb-stack">${(t.images||[]).slice(0,2).map((src,i)=>`<img src="${src}" alt="ภาพออเดอร์ ${i+1}">`).join('')}</div>
     <button class="more-btn" aria-label="แก้ไข">›</button>
   </article>`}).join('');
   $('#emptyState').hidden=filtered.length>0;
-  const closed=scope.filter(t=>t.status!=='pending'), pending=scope.filter(t=>t.status==='pending');
+  const closedAll=scope.filter(t=>t.status!=='pending'),closed=closedAll.filter(hasKnownPL),pending=scope.filter(t=>t.status==='pending');
   $('#openTradeCount').textContent=pending.length; $('#tradeCount').textContent=`${filtered.length} / ${scope.length} ENTRIES`;
   const net=closed.reduce((s,t)=>s+Number(t.pl),0), wins=closed.filter(t=>t.pl>0);
   $('#netPL').textContent=money(net); $('#netPL').className=net>=0?'positive':'negative';
-  $('#netCaption').textContent=`${closed.length} ปิดแล้ว${pending.length?' · '+pending.length+' กำลังถือ':''}`; $('#winRate').textContent=closed.length?`${Math.round(wins.length/closed.length*100)}%`:'—';
+  $('#netCaption').textContent=`${closedAll.length} ปิดแล้ว${closedAll.length-closed.length?' · '+(closedAll.length-closed.length)+' รอต้นทุน':''}${pending.length?' · '+pending.length+' กำลังถือ':''}`; $('#winRate').textContent=closed.length?`${Math.round(wins.length/closed.length*100)}%`:'—';
   $('#avgWin').textContent=wins.length?money(wins.reduce((s,t)=>s+Number(t.pl),0)/wins.length):'—';
-  const bySetup={}; closed.forEach(t=>{if(!bySetup[t.setup])bySetup[t.setup]={pl:0,n:0};bySetup[t.setup].pl+=Number(t.pl);bySetup[t.setup].n++});
+  const bySetup={}; closed.forEach(t=>{if(!t.setup)return;if(!bySetup[t.setup])bySetup[t.setup]={pl:0,n:0};bySetup[t.setup].pl+=Number(t.pl);bySetup[t.setup].n++});
   const best=Object.entries(bySetup).sort((a,b)=>b[1].pl-a[1].pl)[0]; $('#bestSetup').textContent=best?.[0]||'—'; $('#bestSetupCaption').textContent=best?`${money(best[1].pl)} / ${best[1].n} เทรด`:'ยังไม่มีข้อมูล';
   renderEmotionSummary(scope); renderSetupOptions(); renderSetupList(); renderInsights(scope);
 }
 function renderEmotionSummary(scope){
   const rows=['before','during','after'].map(k=>{const options=emotionOptions(k);const values=scope.map(t=>normalizeEmotion(t.emotions?.[k],k)).filter(Boolean);const counts=Object.fromEntries(options.map(e=>[e.id,values.filter(v=>v===e.id).length]));const total=values.length||1;return `<div class="emotion-summary-card"><div class="emotion-line-head"><strong>${emotionLabels[k]}</strong></div><div class="emotion-distribution" aria-label="สัดส่วนอารมณ์ช่วง${emotionLabels[k]}">${options.map(e=>counts[e.id]?`<i class="emotion-${e.id}" style="width:${counts[e.id]/total*100}%" title="${e.label} ${counts[e.id]} ครั้ง"></i>`:'').join('')}</div></div>`});
   $('#emotionSummary').innerHTML=rows.join('');
-  const closed=scope.filter(t=>t.status!=='pending');
+  const closed=scope.filter(hasKnownPL);
   const insight=id=>{const entries=closed.filter(t=>normalizeEmotion(t.emotions?.before)===id),net=entries.reduce((sum,t)=>sum+Number(t.pl),0),wins=entries.filter(t=>Number(t.pl)>0).length,rate=entries.length?Math.round(wins/entries.length*100):0,label=EMOTIONS.find(e=>e.id===id).label;return `<article class="emotion-insight-card emotion-${id}"><span>BEFORE ENTRY · ${label.toUpperCase()}</span><strong class="${net>=0?'is-profit':'is-loss'}">${entries.length?money(net):'—'}</strong><small>${entries.length?`${entries.length} เทรด · WIN ${rate}%`:'ยังไม่มีข้อมูลเทรดที่ปิดแล้ว'}</small></article>`};
   $('#emotionInsights').innerHTML=insight('confident')+insight('hesitant');
-  if(scope.length>2){const during=scope.map(t=>normalizeEmotion(t.emotions?.during,'during'));const risky=during.filter(x=>x==='anxious'||x==='fomo').length>during.length/2;$('#coachText').textContent=risky?'ช่วงถือออเดอร์มีความกังวลหรือ FOMO บ่อย ลองกำหนดแผนออกก่อนกดเข้า':'ภาพรวมอารมณ์ค่อนข้างนิ่ง ทบทวนบันทึกหลังปิดออเดอร์เพื่อรักษา pattern นี้ไว้';}
-  else $('#coachText').textContent='บันทึกเพิ่มอีกหน่อยเพื่อเห็นรูปแบบอารมณ์ที่ชัดขึ้น';
+  const during=scope.map(t=>normalizeEmotion(t.emotions?.during,'during')).filter(Boolean);
+  if(during.length>=3){const risky=during.filter(x=>x==='anxious'||x==='fomo').length>during.length/2;$('#coachText').textContent=risky?'ช่วงถือออเดอร์มีความกังวลหรือ FOMO บ่อย ลองกำหนดแผนออกก่อนกดเข้า':'ภาพรวมอารมณ์ค่อนข้างนิ่ง ทบทวนบันทึกหลังปิดออเดอร์เพื่อรักษา pattern นี้ไว้';}
+  else $('#coachText').textContent='ยังไม่มีข้อมูลอารมณ์เพียงพอ เลือกบันทึกเฉพาะช่วงที่จำความรู้สึกได้จริง';
 }
 function tradeStats(entries){
   const net=entries.reduce((sum,t)=>sum+Number(t.pl||0),0);
@@ -172,35 +184,58 @@ function resultRows(groups,empty='ยังไม่มีเทรดที่�
   return groups.map(g=>`<div class="result-row"><div class="result-row-top"><strong>${escapeHTML(g.name)}</strong><span class="${g.net<0?'is-loss':'is-profit'}">${money(g.net)}</span></div><div class="result-row-foot"><span>${g.count} เทรด · ชนะ ${g.winRate}%</span><span class="result-track"><i class="${g.net<0?'negative':''}" style="width:${Math.max(3,Math.abs(g.net)/peak*100)}%"></i></span></div></div>`).join('');
 }
 function renderInsights(scope){
-  const closed=scope.filter(t=>t.status!=='pending');
-  const overall=tradeStats(closed),pending=scope.length-closed.length;
+  const closed=scope.filter(hasKnownPL),pending=scope.filter(t=>t.status==='pending').length,unpriced=scope.filter(t=>t.status!=='pending'&&!hasKnownPL(t)).length;
+  const overall=tradeStats(closed);
   $('#insightScope').textContent=activeMarket==='all'?'ทุกตลาด':assetLabel(activeMarket);
-  $('#insightMetrics').innerHTML=`<article><span>CLOSED TRADES</span><strong>${overall.count}</strong><small>${pending} รายการกำลังถือ</small></article><article><span>NET P/L</span><strong class="${overall.net<0?'is-loss':'is-profit'}">${money(overall.net)}</strong><small>เฉพาะรายการปิดแล้ว</small></article><article><span>WIN RATE</span><strong>${overall.count?overall.winRate+'%':'—'}</strong><small>กำไร / รายการปิดแล้ว</small></article><article><span>AVG. TRADE</span><strong>${overall.count?money(overall.net/overall.count):'—'}</strong><small>ผลลัพธ์เฉลี่ยต่อเทรด</small></article>`;
+  $('#insightMetrics').innerHTML=`<article><span>CLOSED TRADES</span><strong>${overall.count}</strong><small>${pending} กำลังถือ${unpriced?' · '+unpriced+' รอต้นทุน':''}</small></article><article><span>NET P/L</span><strong class="${overall.net<0?'is-loss':'is-profit'}">${money(overall.net)}</strong><small>เฉพาะรายการที่ทราบ P/L</small></article><article><span>WIN RATE</span><strong>${overall.count?overall.winRate+'%':'—'}</strong><small>กำไร / รายการที่ทราบ P/L</small></article><article><span>AVG. TRADE</span><strong>${overall.count?money(overall.net/overall.count):'—'}</strong><small>ผลลัพธ์เฉลี่ยต่อเทรด</small></article>`;
   $('#marketBreakdown').innerHTML=resultRows(groupedResults(closed,t=>assetLabel(tradeAsset(t))));
   $('#setupBreakdown').innerHTML=resultRows(groupedResults(closed,t=>t.setup));
   $('#symbolBreakdown').innerHTML=resultRows(groupedResults(closed,t=>t.symbol));
   $('#mindsetBreakdown').innerHTML=resultRows(groupedResults(closed,t=>{const id=normalizeEmotion(t.emotions?.before);return TRADE_EMOTIONS.find(e=>e.id===id)?.label||'ไม่ได้บันทึก';}));
   $('#styleBreakdown').innerHTML=resultRows(groupedResults(closed.filter(t=>t.tradeStyle),t=>({swing:'Swing trade',day:'Day trade',position:'Position trade'})[t.tradeStyle]||t.tradeStyle),'ยังไม่มีข้อมูลรูปแบบการถือ — เพิ่มได้ตอนจดหุ้นหรือออปชั่น');
-  const review=scope.filter(t=>t.status==='pending'||Number(t.pl)<0).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  $('#reviewQueue').innerHTML=review.length?review.map(t=>`<button type="button" class="review-trade" data-review-trade="${t.id}"><span><strong>${escapeHTML(t.symbol)}</strong><small>${assetLabel(tradeAsset(t))} · ${t.status==='pending'?'กำลังถือ':'ขาดทุน'}</small></span><b class="${t.status==='pending'?'': 'is-loss'}">${t.status==='pending'?'↗':money(t.pl)}</b></button>`).join(''):'<p class="insight-empty">ยังไม่มีรายการขาดทุนหรือกำลังถือในตัวกรองนี้</p>';
+  const review=scope.filter(t=>t.status==='pending'||!hasKnownPL(t)||Number(t.pl)<0).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  $('#reviewQueue').innerHTML=review.length?review.map(t=>`<button type="button" class="review-trade" data-review-trade="${t.id}"><span><strong>${escapeHTML(t.symbol)}</strong><small>${assetLabel(tradeAsset(t))} · ${t.status==='pending'?'กำลังถือ':(!hasKnownPL(t)?'รอต้นทุน':'ขาดทุน')}</small></span><b class="${t.status==='pending'||!hasKnownPL(t)?'': 'is-loss'}">${t.status==='pending'?'↗':(!hasKnownPL(t)?'—':money(t.pl))}</b></button>`).join(''):'<p class="insight-empty">ยังไม่มีรายการขาดทุนหรือกำลังถือในตัวกรองนี้</p>';
   const losses=closed.filter(t=>Number(t.pl)<0).length;
   $('#reviewNote').innerHTML=`<span>REVIEW PROMPT</span><p>${overall.count<5?'ข้อมูลยังน้อย ใช้ตัวเลขเป็นจุดเริ่มทบทวน ไม่ใช่ข้อสรุปของกลยุทธ์':`มีเทรดขาดทุน ${losses} รายการ ลองเปิดบันทึกและภาพประกอบเพื่อดูว่าทำตามแผนหรือไม่`}</p><small>เลือกตลาดหรือค้นหาสัญลักษณ์ด้านบนเพื่อเจาะลึกเฉพาะรายการที่ต้องการ</small>`;
 }
-function renderSetupOptions(selected){ const sel=$('#setup'); sel.innerHTML=setups.map(x=>`<option ${x===selected?'selected':''}>${escapeHTML(x)}</option>`).join('')+`<option value="">— ไม่ระบุ —</option>`; }
+function renderSetupOptions(selected){ const sel=$('#setup'); sel.innerHTML=`<option value="">— ไม่ระบุ —</option>`+setups.map(x=>`<option ${x===selected?'selected':''}>${escapeHTML(x)}</option>`).join('');sel.value=selected||''; }
 function renderSetupList(){ $('#setupList').innerHTML=setups.map((x,i)=>`<div class="setup-item"><div><strong>${escapeHTML(x)}</strong><br><small>${trades.filter(t=>t.setup===x).length} บันทึก</small></div><button class="delete-setup" data-index="${i}" ${trades.some(t=>t.setup===x)?'title="ลบได้โดยบันทึกเก่าจะยังคงชื่อเดิม"':''}>ลบ</button></div>`).join(''); }
-function renderEmotionForm(values={before:'confident',during:'confident',after:'satisfied'}){ $('#emotionForm').innerHTML=Object.entries(emotionLabels).map(([k,label])=>{const options=emotionOptions(k);const selected=normalizeEmotion(values[k],k)||(k==='after'?'satisfied':'confident');return `<div class="emotion-field" data-emotion="${k}"><strong>${label}</strong><div class="emotion-choice-grid">${options.map(e=>`<button type="button" class="emotion-choice emotion-${e.id} ${selected===e.id?'selected':''}" data-value="${e.id}"><b>${e.mark}</b><span><strong>${e.label}</strong><small>${e.thai}</small></span></button>`).join('')}</div></div>`}).join(''); updateStatusFields(); }
-function updateStatusFields(){ const pending=$('#tradeStatus').value==='pending';$('#pl').required=!pending;$('#plField').classList.toggle('is-disabled',pending);$('[data-emotion="after"]')?.classList.toggle('is-disabled',pending); }
+function renderEmotionForm(values={}){ $('#emotionForm').innerHTML=Object.entries(emotionLabels).map(([k,label])=>{const options=emotionOptions(k);const selected=normalizeEmotion(values?.[k],k);return `<div class="emotion-field" data-emotion="${k}"><strong>${label}</strong><div class="emotion-choice-grid">${options.map(e=>`<button type="button" aria-pressed="${selected===e.id}" class="emotion-choice emotion-${e.id} ${selected===e.id?'selected':''}" data-value="${e.id}"><b>${e.mark}</b><span><strong>${e.label}</strong><small>${e.thai}</small></span></button>`).join('')}</div></div>`}).join(''); updateStatusFields(); }
+function updateStatusFields(){ const pending=$('#tradeStatus').value==='pending',existing=trades.find(t=>t.id===$('#tradeId').value),fromFills=existing?.plSource==='fills';$('#pl').required=!pending&&!fromFills;$('#pl').readOnly=Boolean(fromFills);$('#plField').hidden=pending;$('[data-emotion="after"]')?.classList.toggle('is-disabled',pending); }
+function renderExecutionHistory(trade){
+  const panel=$('#executionHistory'),fills=Array.isArray(trade?.fills)?trade.fills:[];
+  panel.hidden=!trade||(!trade.matchKey&&!fills.length);
+  if(panel.hidden)return;
+  const rows=fills.map(fill=>{const action=fill.action==='sell'?'ขาย':'ซื้อ',quantity=Number(fill.quantity),price=Number(fill.unitPrice),multiplier=Number(fill.multiplier||1),gross=Number.isFinite(quantity*price*multiplier)?quantity*price*multiplier:null;return `<div class="execution-item"><strong>${action}</strong><small>${escapeHTML(fill.executedAt||'ไม่ระบุเวลา')} · ${escapeHTML(String(fill.quantity??'—'))} @ ${escapeHTML(String(fill.unitPrice??'—'))}${multiplier!==1?' × '+multiplier:''}</small><output>${gross===null?'—':'$'+gross.toLocaleString('en-US',{maximumFractionDigits:2})}</output></div>`}).join('');
+  $('#executionHistoryBody').innerHTML=`<div class="execution-key"><span>MATCHKEY</span><code>${escapeHTML(trade.matchKey||'—')}</code></div>${rows?`<div class="execution-list">${rows}</div>`:'<p class="execution-empty">ยังไม่มีสลิปซื้อ–ขายที่บอตบันทึกไว้</p>'}`;
+}
 function openTrade(trade){
   $('#tradeForm').reset(); pendingImages=trade?.images?[...trade.images]:[]; $('#tradeId').value=trade?.id||''; $('#formTitle').textContent=trade?'ดูและแก้ไขบันทึก':'บันทึกเทรด';
   $('#assetClass').value=trade?tradeAsset(trade):(activeMarket==='all'?'gold':activeMarket);updateAssetFields();$('#tradeStyle').value=trade?.tradeStyle||'swing';
   $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
-  $('#deleteTradeBtn').hidden=!trade;
-  renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions); renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
+  $('#deleteTradeBtn').hidden=!trade;$('#entryMore').open=false;$('#executionHistory').open=false;$('#tradeForm button[type="submit"]').textContent=trade?'บันทึกการแก้ไข →':'บันทึก Journal →';
+  renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions);renderExecutionHistory(trade);renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
 }
 function openModal(which){ $(`#${which}Modal`).classList.add('open'); $(`#${which}Modal`).setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
 function closeModal(which){ $(`#${which}Modal`).classList.remove('open'); $(`#${which}Modal`).setAttribute('aria-hidden','true'); if(!$('.modal.open'))document.body.classList.remove('modal-open'); }
 
-$('#tradeForm').addEventListener('submit',async e=>{e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน'); const status=$('#tradeStatus').value,assetClass=$('#assetClass').value;const emotions={}; $$('.emotion-field').forEach(f=>emotions[f.dataset.emotion]=f.dataset.emotion==='after'&&status==='pending'?null:$('.selected',f).dataset.value); const id=$('#tradeId').value||crypto.randomUUID(); const old=trades.find(t=>t.id===id); const trade={id,status,assetClass,tradeStyle:assetClass==='stock'||assetClass==='option'?$('#tradeStyle').value:null,symbol:$('#symbol').value.trim().toUpperCase(),direction:$('#direction').value,date:$('#tradeDate').value,pl:status==='pending'?null:Number($('#pl').value),setup:$('#setup').value,emotions,notes:$('#notes').value.trim(),images:pendingImages.length?pendingImages:(old?.images||[])}; const button=$('#tradeForm button[type="submit"]');button.disabled=true;try{const saved=await persistTrade(trade,old);trades=old?trades.map(t=>t.id===id?saved:t):[saved,...trades];save();render();closeModal('trade');toast(status==='pending'?'บันทึกเป็นออเดอร์กำลังถือแล้ว':'บันทึกเทรดแล้ว ✓');}catch(error){toast(`บันทึกไม่สำเร็จ: ${error.message}`);}finally{button.disabled=false;}});
+$('#tradeForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');
+  const status=$('#tradeStatus').value,assetClass=$('#assetClass').value,emotions={};
+  $$('.emotion-field').forEach(f=>emotions[f.dataset.emotion]=f.dataset.emotion==='after'&&status==='pending'?null:($('.selected',f)?.dataset.value||null));
+  const id=$('#tradeId').value||crypto.randomUUID(),old=trades.find(t=>t.id===id);
+  const trade={...old,id,matchKey:old?.matchKey||`TN-${id}`,status,assetClass,tradeStyle:assetClass==='stock'||assetClass==='option'?$('#tradeStyle').value:null,symbol:$('#symbol').value.trim().toUpperCase(),direction:$('#direction').value,date:$('#tradeDate').value,pl:status==='pending'?null:($('#pl').value===''?null:Number($('#pl').value)),setup:$('#setup').value,emotions,notes:$('#notes').value.trim(),images:pendingImages.length?pendingImages:(old?.images||[])};
+  const button=$('#tradeForm button[type="submit"]');button.disabled=true;
+  try{
+    const saved=await persistTrade(trade,old);trades=old?trades.map(t=>t.id===id?saved:t):[saved,...trades];
+    save();render();closeModal('trade');toast(status==='pending'?'บันทึกเป็นออเดอร์กำลังถือแล้ว':'บันทึกเทรดแล้ว ✓');
+  }catch(error){
+    if(error.code==='STALE_TRADE'){
+      try{await loadCloud();closeModal('trade');}catch(refreshError){toast(`โหลดข้อมูลใหม่ไม่สำเร็จ: ${refreshError.message}`);return;}
+      toast('มีข้อมูลใหม่จากบอตหรืออีกหน้าต่าง กรุณาเปิดรายการอีกครั้ง');
+    }else toast(`บันทึกไม่สำเร็จ: ${error.message}`);
+  }finally{button.disabled=false;}
+});
 $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');const name=$('#newSetupName').value.trim();if(!name)return;if(setups.some(x=>x.toLowerCase()===name.toLowerCase()))return toast('มี Setup ชื่อนี้แล้ว');const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error)return toast(`เพิ่ม Setup ไม่สำเร็จ: ${error.message}`);setups.push(name);$('#newSetupName').value='';save();render();toast('เพิ่ม Setup แล้ว');});
 $('#screenshots').addEventListener('change',async e=>{const files=[...e.target.files].slice(0,3);pendingImages=await Promise.all(files.map(file=>new Promise(resolve=>{const img=new Image(),reader=new FileReader();reader.onload=()=>{img.onload=()=>{const c=document.createElement('canvas'),max=1200,scale=Math.min(1,max/img.width);c.width=img.width*scale;c.height=img.height*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.76));};img.src=reader.result};reader.readAsDataURL(file)})));renderPreviews();});
 $('#tradeStatus').addEventListener('change',updateStatusFields);
@@ -223,7 +258,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#newTradeBtn')||e.target.closest('#emptyAddBtn'))openTrade();
   if(e.target.closest('#quickAddSetup'))openModal('setup');
   const nav=e.target.closest('.nav-item');if(nav){if(nav.dataset.view==='setups')openModal('setup');else setView(nav.dataset.view);}
-  const emo=e.target.closest('.emotion-choice');if(emo){$$('.emotion-choice',emo.parentElement).forEach(x=>x.classList.remove('selected'));emo.classList.add('selected');}
+  const emo=e.target.closest('.emotion-choice');if(emo){const wasSelected=emo.classList.contains('selected');$$('.emotion-choice',emo.parentElement).forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});if(!wasSelected){emo.classList.add('selected');emo.setAttribute('aria-pressed','true')}}
   const row=e.target.closest('.trade-row');if(row)openTrade(trades.find(t=>t.id===row.dataset.id));
   const review=e.target.closest('[data-review-trade]');if(review)openTrade(trades.find(t=>t.id===review.dataset.reviewTrade));
   const filter=e.target.closest('.filter');if(filter){activeFilter=filter.dataset.filter;$$('.filter').forEach(x=>x.classList.remove('active'));filter.classList.add('active');render();}
