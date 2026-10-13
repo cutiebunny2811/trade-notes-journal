@@ -270,14 +270,14 @@ begin
       raise exception 'MATCHKEY_CONFLICT';
     end if;
   else
-    select count(*), min(id) into v_candidate_count, v_trade_id
+    select count(*), (array_agg(id))[1] into v_candidate_count, v_trade_id
     from public.journal_trades where user_id = v_user
       and data->>'status' = 'pending' and data->>'symbol' = v_symbol
       and data->>'direction' = v_direction and data->>'assetClass' = v_asset
       and data->>'lane' = v_lane
       and (v_asset <> 'option' or data->'optionContract' = v_contract);
     if v_candidate_count = 0 then
-      select count(*), min(id) into v_candidate_count, v_trade_id
+      select count(*), (array_agg(id))[1] into v_candidate_count, v_trade_id
       from public.journal_trades where user_id = v_user
         and data->>'status' = 'pending' and data->>'symbol' = v_symbol
         and data->>'direction' = v_direction and data->>'assetClass' = v_asset
@@ -290,8 +290,8 @@ begin
     select data into v_data from public.journal_trades
     where id = v_trade_id and user_id = v_user for update;
     if v_intent in ('buy1', 'open') then raise exception 'OPEN_TRADE_ALREADY_EXISTS'; end if;
-  elsif v_action = case when v_direction = 'SHORT' then 'buy' else 'sell' end
-    or v_intent in ('buy2', 'add', 'sell') then
+  elsif (v_action = (case when v_direction = 'SHORT' then 'buy' else 'sell' end)
+    or v_intent in ('buy2', 'add', 'sell')) then
     raise exception 'OPEN_TRADE_NOT_FOUND';
   else
     v_trade_id := gen_random_uuid();
