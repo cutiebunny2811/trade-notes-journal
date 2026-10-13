@@ -389,3 +389,85 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .confirm-delete-btn:disabled{opacity:.5;cursor:wait}
 .viewer-nav[hidden]{display:none}
 @media(max-width:560px){.delete-card{width:calc(100% - 28px);max-height:none;height:auto;margin:22vh auto 0}.form-actions{gap:8px}.delete-trade-btn{font-size:11px}.form-actions .primary-btn,.form-actions .secondary-btn{padding:11px 12px}}
+
+/* Market screener and review desk. Preserve the approved sidebar artwork. */
+#journalView[hidden],#insightsView[hidden],#tradeStyleField[hidden]{display:none!important}
+.market-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(165px,210px);align-items:end;gap:22px;padding:0 0 20px;margin:-10px 0 24px;border-bottom:1px solid var(--g-rule)}
+.market-toolbar-copy{display:grid;gap:4px;white-space:nowrap}
+.market-toolbar-copy .eyebrow{margin:0;font:700 8px "JetBrains Mono",monospace;letter-spacing:.12em;color:#88704f}
+.market-toolbar-copy strong{font:600 12px "Noto Sans Thai",sans-serif}
+.market-filters{display:flex;gap:2px;flex-wrap:wrap}
+.market-filter{min-height:35px;padding:7px 13px;border:1px solid #a9b5aa;background:#e4e9e2;color:#3d5044;font:600 11px "Noto Sans Thai",sans-serif;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.market-filter:hover{background:#d9e0d8}
+.market-filter.active{background:#16302b;color:#f4ead8;border-color:#16302b;box-shadow:inset 0 -2px #b79261}
+.market-filter:focus-visible,.export-btn:focus-visible,.market-search input:focus-visible{outline:2px solid #9a7249;outline-offset:2px}
+.market-search{display:grid;gap:5px;font:600 9px "Noto Sans Thai",sans-serif;color:#59685f}
+.market-search input{width:100%;min-height:35px;padding:6px 10px;border:1px solid #a9b5aa;background:#eef1eb;font:500 12px "Space Grotesk","Noto Sans Thai",sans-serif;color:#10251b}
+.market-search input::placeholder{color:#7f8980}
+.symbol-cell small{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.asset-tag{display:inline-block;padding:1px 5px;background:#dae2d9;color:#275444;border:1px solid #c3d0c3;font:600 8px "Noto Sans Thai",sans-serif;line-height:1.4;white-space:nowrap}
+.style-tag{font:500 8px "Space Grotesk",sans-serif;color:#866846;text-transform:uppercase;white-space:nowrap}
+#tradeStyleField{grid-column:span 2}
+
+.insights-view{min-width:0}
+.insights-heading{display:flex;align-items:end;justify-content:space-between;gap:25px;margin:0 0 20px}
+.insights-heading .eyebrow{font:700 9px "JetBrains Mono",monospace;color:#876949;letter-spacing:.1em;margin:0 0 8px}
+.insights-heading h2{font:600 clamp(23px,2.8vw,32px)/1.2 "Space Grotesk","Noto Sans Thai",sans-serif;letter-spacing:-.035em;margin:0}
+.insights-heading p:not(.eyebrow){font:400 12px "Noto Sans Thai",sans-serif;color:#627068;margin:7px 0 0}
+.export-btn{min-height:38px;padding:8px 14px;border:1px solid #4d5f52;background:#dce4da;color:#173b2e;font:600 11px "Noto Sans Thai",sans-serif;white-space:nowrap;cursor:pointer}
+.export-btn:hover{background:#d0dbcf}
+.insight-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--g-rule);background:#e5eae4;margin-bottom:18px}
+.insight-metrics article{min-width:0;padding:16px 18px;border-right:1px solid var(--g-rule)}
+.insight-metrics article:last-child{border-right:0}
+.insight-metrics article>span,.insight-block-head>span,.review-note>span{display:block;font:700 8px "JetBrains Mono",monospace;color:#778078;letter-spacing:.1em}
+.insight-metrics article>strong{display:block;margin:10px 0 4px;font:700 clamp(20px,2.5vw,30px) "JetBrains Mono",monospace;letter-spacing:-.05em;overflow-wrap:anywhere}
+.insight-metrics article>small{font:400 10px "Noto Sans Thai",sans-serif;color:#6d786e}
+.is-profit{color:#176a58!important}.is-loss{color:#9c3d53!important}
+.insight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.insight-block{background:#e5eae4;border:1px solid var(--g-rule);min-width:0;padding:20px}
+.insight-block-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1px solid var(--g-rule);padding-bottom:13px;margin-bottom:3px}
+.insight-block-head>span{white-space:nowrap;color:#9a7852}
+.insight-block h3{margin:0;font:600 15px "Noto Sans Thai",sans-serif;color:#18291f;text-align:right}
+.result-row{padding:13px 0;border-bottom:1px solid #cbd4ca}
+.result-row:last-child{border-bottom:0;padding-bottom:0}
+.result-row-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.result-row-top strong{font:600 12px "Space Grotesk","Noto Sans Thai",sans-serif;overflow-wrap:anywhere}
+.result-row-top span{font:700 13px "JetBrains Mono",monospace;white-space:nowrap}
+.result-row-foot{display:grid;grid-template-columns:auto minmax(50px,1fr);align-items:center;gap:14px;margin-top:7px;color:#6f7b71;font:400 9px "Noto Sans Thai",sans-serif}
+.result-track{display:block;height:3px;background:#d1dbd0;overflow:hidden}
+.result-track i{display:block;height:100%;background:#3b8b72}
+.result-track i.negative{background:#aa5260}
+.insight-empty{padding:20px 0 4px;margin:0;color:#758078;font:400 12px "Noto Sans Thai",sans-serif}
+.review-trade{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 0;border:0;border-bottom:1px solid #cbd4ca;background:transparent;text-align:left;cursor:pointer}
+.review-trade:last-child{border-bottom:0}
+.review-trade:hover strong{text-decoration:underline;text-underline-offset:3px}
+.review-trade span{display:grid;gap:3px;min-width:0}
+.review-trade strong{font:600 12px "Space Grotesk","Noto Sans Thai",sans-serif;color:#14291e;overflow-wrap:anywhere}
+.review-trade small{font:400 9px "Noto Sans Thai",sans-serif;color:#708075}
+.review-trade b{font:700 12px "JetBrains Mono",monospace;color:#487260;white-space:nowrap}
+.review-trade:focus-visible{outline:2px solid #9a7249;outline-offset:2px}
+.review-note{display:grid;grid-template-columns:120px 1fr;column-gap:18px;align-items:start;margin-top:18px;padding:19px 21px;background:#17312a;color:#f1f1e9;border-top:2px solid #b79261}
+.review-note>span{color:#c4a475;margin-top:2px}
+.review-note p{margin:0;font:500 13px/1.6 "Noto Sans Thai",sans-serif}
+.review-note small{grid-column:2;color:#a9b9ac;margin-top:6px;font:400 10px "Noto Sans Thai",sans-serif}
+
+@media(max-width:1150px){.market-toolbar{grid-template-columns:1fr minmax(160px,210px)}.market-toolbar-copy{grid-column:1/-1}.market-filters{grid-column:1}}
+@media(max-width:900px){.market-toolbar{margin-top:0}.insight-grid{gap:12px}}
+@media(max-width:640px){
+  .market-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:11px;margin:-2px 0 18px;padding-bottom:17px}
+  .market-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+  .market-filter{padding:6px 2px;min-height:34px;font-size:9px}
+  .market-search{width:100%}
+  .insights-heading{display:block}
+  .insights-heading p:not(.eyebrow){line-height:1.5}
+  .export-btn{margin-top:15px}
+  .insight-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .insight-metrics article{padding:13px 12px}
+  .insight-metrics article:nth-child(2){border-right:0}
+  .insight-metrics article:nth-child(-n+2){border-bottom:1px solid var(--g-rule)}
+  .insight-metrics article>strong{font-size:21px}
+  .insight-grid{grid-template-columns:1fr}
+  .insight-block{padding:15px}
+  .review-note{grid-template-columns:1fr;gap:6px;padding:16px}
+  .review-note small{grid-column:1}
+}

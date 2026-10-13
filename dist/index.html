@@ -44,6 +44,19 @@
         </div>
       </header>
 
+      <section class="market-toolbar" aria-label="กรองตลาดและค้นหาบันทึก">
+        <div class="market-toolbar-copy"><span class="eyebrow">JOURNAL SCREENER</span><strong>เลือกตลาดที่อยากทบทวน</strong></div>
+        <div class="market-filters" role="group" aria-label="ประเภทสินทรัพย์">
+          <button class="market-filter active" type="button" data-market="all" aria-pressed="true">ทั้งหมด</button>
+          <button class="market-filter" type="button" data-market="gold" aria-pressed="false">ทอง</button>
+          <button class="market-filter" type="button" data-market="stock" aria-pressed="false">หุ้น</button>
+          <button class="market-filter" type="button" data-market="option" aria-pressed="false">ออปชั่น</button>
+          <button class="market-filter" type="button" data-market="crypto" aria-pressed="false">คริปโต</button>
+        </div>
+        <label class="market-search"><span>ค้นหาสัญลักษณ์</span><input id="symbolSearch" type="search" placeholder="เช่น XAUUSD, AAPL" autocomplete="off"></label>
+      </section>
+
+      <div id="journalView">
       <section class="stats-grid" aria-label="สรุปผลการเทรด">
         <article class="stat-card main-stat">
           <span>NET P/L</span>
@@ -91,6 +104,21 @@
           </div>
         </aside>
       </section>
+      </div>
+
+      <section class="insights-view" id="insightsView" hidden aria-labelledby="insightsTitle">
+        <div class="insights-heading"><div><p class="eyebrow">REVIEW DESK / <span id="insightScope">ทุกตลาด</span></p><h2 id="insightsTitle">Insights ที่ใช้ทบทวนจริง</h2><p>ตัวเลขจากบันทึกที่ปิดแล้ว แยกให้เห็นว่าตลาด แผน และอารมณ์แบบไหนได้ผล</p></div><button type="button" id="exportJournalBtn" class="export-btn">↓ ส่งออก JSON</button></div>
+        <div class="insight-metrics" id="insightMetrics"></div>
+        <div class="insight-grid">
+          <section class="insight-block"><div class="insight-block-head"><span>01 / MARKET</span><h3>ผลลัพธ์แยกตลาด</h3></div><div id="marketBreakdown"></div></section>
+          <section class="insight-block"><div class="insight-block-head"><span>02 / SETUP</span><h3>แผนที่ใช้แล้วเป็นอย่างไร</h3></div><div id="setupBreakdown"></div></section>
+          <section class="insight-block"><div class="insight-block-head"><span>03 / SYMBOL</span><h3>ตัวที่ควรกลับไปดู</h3></div><div id="symbolBreakdown"></div></section>
+          <section class="insight-block"><div class="insight-block-head"><span>04 / MINDSET</span><h3>อารมณ์ก่อนเข้า vs ผลลัพธ์</h3></div><div id="mindsetBreakdown"></div></section>
+          <section class="insight-block"><div class="insight-block-head"><span>05 / HOLDING STYLE</span><h3>รูปแบบการถือ</h3></div><div id="styleBreakdown"></div></section>
+          <section class="insight-block"><div class="insight-block-head"><span>06 / REVIEW QUEUE</span><h3>รายการที่ควรย้อนดู</h3></div><div id="reviewQueue"></div></section>
+        </div>
+        <div class="review-note" id="reviewNote"></div>
+      </section>
     </main>
   </div>
 
@@ -103,7 +131,9 @@
         <div class="form-section">
           <div class="form-section-label"><span>01</span><div><strong>รายละเอียดออเดอร์</strong><small>WHAT DID YOU TRADE?</small></div></div>
           <div class="form-grid">
-            <label class="field span-2"><span>SYMBOL / คู่เทรด</span><input id="symbol" placeholder="เช่น XAUUSD, BTCUSDT" required autocomplete="off" /></label>
+            <label class="field span-2"><span>ประเภทสินทรัพย์</span><select id="assetClass" required><option value="gold">ทอง / GOLD</option><option value="stock">หุ้น / STOCK</option><option value="option">ออปชั่น / OPTIONS</option><option value="crypto">คริปโต / CRYPTO</option></select></label>
+            <label class="field span-2"><span id="symbolLabel">SYMBOL / คู่เทรด</span><input id="symbol" placeholder="เช่น XAUUSD" required autocomplete="off" /></label>
+            <label class="field span-2" id="tradeStyleField" hidden><span>รูปแบบการเทรด</span><select id="tradeStyle"><option value="swing">Swing trade</option><option value="day">Day trade</option><option value="position">Position trade</option></select></label>
             <label class="field"><span>ORDER STATUS</span><select id="tradeStatus"><option value="pending">กำลังถือ / PENDING</option><option value="closed">ปิดออเดอร์แล้ว</option></select></label>
             <label class="field"><span>DIRECTION</span><select id="direction"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></label>
             <label class="field"><span>DATE & TIME</span><input id="tradeDate" type="datetime-local" required /></label>
