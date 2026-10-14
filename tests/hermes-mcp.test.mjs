@@ -30,17 +30,80 @@ function runAdapter(env, messages) {
   });
 }
 
-test("lists only the journal writer and refuses a missing token", async () => {
+test("lists scoped writer, reader and correction tools and refuses a missing token", async () => {
   const output = await runAdapter({ TRADE_NOTES_AGENT_TOKEN: "" }, [
     { jsonrpc: "2.0", id: 1, method: "tools/list" },
     { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "record_confirmed_trade_fill", arguments: sample } },
   ]);
-  assert.equal(output[0].result.tools.length, 1);
+  assert.deepEqual(output[0].result.tools.map(tool => tool.name), [
+    "record_confirmed_trade_fill", "read_trade_notes", "correct_recorded_trade_fill",
+  ]);
   const fields = output[0].result.tools[0].inputSchema.properties;
   assert.deepEqual(fields.lane.enum, ["swing", "option", "position"]);
   assert.deepEqual(fields.assetClass.enum, ["stock", "option"]);
   assert.deepEqual(fields.tradeStyle.enum, ["swing", "position"]);
   assert.equal(output[1].result.isError, true);
+});
+
+test("reviews a Bangkok-date window and calculates exit P/L without treating an open position as closed", async () => {
+  let captured;
+  const http = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    captured = { path: request.url, body: JSON.parse(Buffer.concat(chunks).toString()) };
+    const from = captured.body.p_from, to = captured.body.p_to;
+    const opened = new Date(Date.parse(from) + 60_000).toISOString();
+    const exited = new Date(Date.parse(from) + 120_000).toISOString();
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ from, to, totalCount: 1, returnedCount: 1, truncated: false,
+      trades: [{ symbol: "STX", direction: "LONG", status: "pending", notes: "waited for setup",
+        fills: [
+          { action: "buy", quantity: 2, unitPrice: 10, commission: 1, otherFees: 0, multiplier: 1, executedAt: opened },
+          { action: "sell", quantity: 1, unitPrice: 15, commission: 0.5, otherFees: 0, multiplier: 1, executedAt: exited },
+        ] }] }));
+  });
+  await new Promise(resolve => http.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = http.address();
+    const output = await runAdapter({ TRADE_NOTES_AGENT_TOKEN: token,
+      TRADE_NOTES_URL: `http://127.0.0.1:${port}` }, [
+      { jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "read_trade_notes",
+        arguments: { period: "last_7_days", symbol: "STX" } } },
+    ]);
+    assert.equal(captured.path, "/rest/v1/rpc/api_tsuki_read_journal");
+    assert.equal(captured.body.p_token, token);
+    assert.equal(captured.body.p_symbol, "STX");
+    const result = JSON.parse(output[0].result.content[0].text);
+    assert.equal(result.metrics.realizedOnExits, 4);
+    assert.equal(result.metrics.feesOnExecutions, 1.5);
+    assert.equal(result.trades[0].status, "pending");
+    assert.equal(result.trades[0].periodExitCount, 1);
+  } finally { http.close(); }
+});
+
+test("sends one exact fill correction to the correction RPC", async () => {
+  let captured;
+  const http = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    captured = { path: request.url, body: JSON.parse(Buffer.concat(chunks).toString()) };
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ unchanged: false, openQuantity: 1, realizedPl: 0 }));
+  });
+  await new Promise(resolve => http.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = http.address();
+    const correction = { matchKey: "TN-example", fillId: "00000000-0000-0000-0000-000000000001",
+      expectedUpdatedAt: "2026-10-14T10:00:00Z", changes: { unitPrice: 706.11 }, reason: "correct price from user" };
+    const output = await runAdapter({ TRADE_NOTES_AGENT_TOKEN: token,
+      TRADE_NOTES_URL: `http://127.0.0.1:${port}` }, [
+      { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "correct_recorded_trade_fill",
+        arguments: correction } },
+    ]);
+    assert.equal(captured.path, "/rest/v1/rpc/api_tsuki_correct_fill");
+    assert.deepEqual(captured.body.p_payload, correction);
+    assert.equal(output[0].result.isError, false);
+  } finally { http.close(); }
 });
 
 test("sends a confirmed fill to the exact RPC and returns its read-back", async () => {

@@ -40,7 +40,7 @@ The browser calculates realized P/L with **weighted-average cost**: gross is qua
 
 ## Tsuki writer (separate deployment)
 
-`supabase/migrations/20261015000000_tsuki_writer.sql` is the deployment for Tsuki. It keeps `journal_trades.data.fills` as the sole execution source read by the existing app, adding a private agent-token table, private idempotency receipts, and an atomic `api_tsuki_record_fill` RPC. The RPC verifies a revocable random token, owner, route, exact contract, source identity, possible forwarded duplicate, matching open trade, position quantity and fees before changing the journal. It recalculates weighted-average P/L and reads the inserted fill back within the same database transaction. The browser's optimistic `updated_at` check prevents a stale manual save from overwriting a new bot fill. Bot fills are read-only in the current form; correcting one requires a separately designed correction path, not a duplicate append.
+`supabase/migrations/20261015000000_tsuki_writer.sql` is the deployment for Tsuki. It keeps `journal_trades.data.fills` as the sole execution source read by the existing app, adding a private agent-token table, private idempotency receipts, and an atomic `api_tsuki_record_fill` RPC. The RPC verifies a revocable random token, owner, route, exact contract, source identity, possible forwarded duplicate, matching open trade, position quantity and fees before changing the journal. It recalculates weighted-average P/L and reads the inserted fill back within the same database transaction. The browser's optimistic `updated_at` check prevents a stale manual save from overwriting a new bot fill. Bot fills remain read-only in the form. The later `20261015020000_tsuki_review_correction.sql` migration adds a separate audited correction RPC that updates one identified bot fill and its receipt, never a duplicate append, plus a bounded read-only journal review RPC.
 
 This migration and `hermes-mcp/server.mjs` have to be deployed/configured before any Telegram prompt is switched from Google Sheets. The public publishable key permits calling the RPC but cannot authorize a write without the separate Tsuki token. Store that token only in Hermes' private profile configuration; never in the app, GitHub, or a chat message.
 
@@ -48,7 +48,7 @@ This migration and `hermes-mcp/server.mjs` have to be deployed/configured before
 
 `supabase/migrations/20261014000000_journal_fills.sql` is an earlier, unapplied normalized-ledger proposal. Do not apply it alongside the current Tsuki writer; doing so would introduce a second execution source without migrating the browser reader. A later ledger migration would need a one-time copy of existing `data.fills` and one canonical projection.
 
-The migration files are repository artifacts until explicitly applied to Supabase. Do not enable a bot writer before deploying and verifying the chosen migration.
+The writer, route correction, and review/correction migrations were applied to the Trade Notes Supabase project on 2026-10-14. Do not enable any later bot capability until its SQL and adapter are both deployed and verified.
 
 ## Hermes handoff
 
