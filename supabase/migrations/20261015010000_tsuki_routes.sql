@@ -6,6 +6,14 @@ declare
   v_old text;
   v_new text;
 begin
+  -- This correction may already have been applied through the SQL editor.
+  -- Let a later migration-history sync register the file without altering it.
+  if position($q$v_lane not in ('swing', 'option', 'position')$q$ in v_sql) > 0
+    and position($q$LANE_STYLE_MISMATCH$q$ in v_sql) > 0
+    and position($q$data->>'tradeStyle' = v_lane$q$ in v_sql) > 0 then
+    return;
+  end if;
+
   v_old := $q$v_lane not in ('nut', 'ging', 'swing', 'option', 'gold')$q$;
   v_new := $q$v_lane not in ('swing', 'option', 'position')$q$;
   if position(v_old in v_sql) = 0 then raise exception 'EXPECTED_OLD_LANES_NOT_FOUND'; end if;
