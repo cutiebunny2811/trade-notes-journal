@@ -36,6 +36,10 @@ test("lists only the journal writer and refuses a missing token", async () => {
     { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "record_confirmed_trade_fill", arguments: sample } },
   ]);
   assert.equal(output[0].result.tools.length, 1);
+  const fields = output[0].result.tools[0].inputSchema.properties;
+  assert.deepEqual(fields.lane.enum, ["swing", "option", "position"]);
+  assert.deepEqual(fields.assetClass.enum, ["stock", "option"]);
+  assert.deepEqual(fields.tradeStyle.enum, ["swing", "position"]);
   assert.equal(output[1].result.isError, true);
 });
 

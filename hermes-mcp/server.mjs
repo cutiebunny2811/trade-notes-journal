@@ -16,9 +16,9 @@ const tools = [{
     properties: {
       sourceKey: { type: "string", description: "Optional stable tg:<chat_id>:<message_id>:<fill_ordinal> if message metadata is actually available. Otherwise omit it; the adapter derives a deterministic key from the broker execution ID or visible fill facts." },
       brokerExecutionId: { type: "string", description: "Stable broker execution identity if visible. Prefix with broker name, for example webull:12345." },
-      lane: { type: "string", enum: ["nut", "ging", "swing", "option", "gold"] },
-      assetClass: { type: "string", enum: ["stock", "option", "gold"] },
-      tradeStyle: { type: "string", enum: ["swing", "day", "position"] },
+      lane: { type: "string", enum: ["swing", "option", "position"], description: "Trade Notes route: swing/position for stocks, option for contracts. Never use legacy Nut/Ging/longterm routes." },
+      assetClass: { type: "string", enum: ["stock", "option"] },
+      tradeStyle: { type: "string", enum: ["swing", "position"], description: "Optional for option; stock style must match its lane." },
       symbol: { type: "string", description: "Underlying ticker, not an option contract string." },
       direction: { type: "string", enum: ["LONG", "SHORT"] },
       action: { type: "string", enum: ["buy", "sell"] },

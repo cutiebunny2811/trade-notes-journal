@@ -6,18 +6,17 @@ The writer implementation lives in `supabase/migrations/20261015000000_tsuki_wri
 
 | Message context | Journal lane | Asset |
 | --- | --- | --- |
-| `nut`, `webull longterm` | `nut` | stock |
-| `ging` | `ging` | stock |
 | `webull swing`, `swing buy1/buy2/sell` | `swing` | stock |
 | `webull option`, `option buy/sell` | `option` | option |
+| `position buy1/buy2/sell`, explicit Position trade | `position` | stock |
 
-The quick journal form keeps its existing asset and holding-style selectors. It does not require a lane for a manual note. A bot fill must have a known lane before writing. Option matching also requires the exact expiration, strike, and call/put; the underlying ticker alone is insufficient.
+`Nut`, `Ging`, and `webull longterm` are retired labels: never infer a new route from them or silently map them to Position. Ask which of the three current routes the user means if an old caption appears. The quick journal form keeps its existing asset and holding-style selectors. It does not require a lane for a manual note. A bot fill must have a known lane before writing. Stock fills use `tradeStyle` equal to `swing` or `position`; the writer sets it from the route. Option matching also requires the exact expiration, strike, and call/put; the underlying ticker alone is insufficient.
 
 ## Safe automatic write
 
 1. Process only a broker-confirmed execution. An unfilled order, PCC draft, `SETUP`, `TEST`, `PING`, or unrelated message does not create a fill.
 2. Parse Webull dates as **DD/MM/YY**. Convert Thai Buddhist years to Gregorian years by subtracting 543. Preserve the broker's original time text and timezone alongside the normalized timestamp.
-3. Resolve one trade by owner, lane/account, asset, symbol or exact option contract, direction, and open cycle. The stable journal UUID/`matchKey` identifies the chosen trade after matching. `buy2` and partial sales add a fill to that trade; a completed cycle and a new entry become a new trade. Do not infer a match from ticker alone if multiple candidates exist.
+3. Resolve one trade by owner, lane, asset, symbol or exact option contract, direction, and open cycle. The stable journal UUID/`matchKey` identifies the chosen trade after matching. `buy2` and partial sales add a fill to that trade; a completed cycle and a new entry become a new trade. Do not infer a match from ticker alone if multiple candidates exist.
 4. Prefer a broker execution ID for deduplication. Use `tg:<chat_id>:<message_id>:<fill_ordinal>` only when Telegram metadata is actually available to the agent. Otherwise omit `sourceKey`; the MCP adapter derives a deterministic key from the broker execution ID or exact visible fill facts. This means a repeated identical slip is safe to retry, while two distinct executions with identical facts and no IDs may need one clarification. The database records each accepted source once and pauses when a forwarded copy may match an earlier fill.
 5. Store each fill's quantity, unit price, multiplier, commission, other fees, and broker time text separately. Gross BUY/SELL is quantity × price × multiplier; commission and other fees are not folded into gross. Do not invent Setup, emotions, or a cost basis. The first writer version keeps the Telegram source identity but does **not** upload the original slip image to Trade Notes Storage; Stella/PCC remains independent.
 6. When all required facts and exactly one match are clear, write automatically **without a confirmation tap**. Re-read the fill and trade summary before reporting success. If a required fact is missing, the match is ambiguous, or a duplicate cannot be distinguished, write nothing and ask one targeted question.
@@ -27,9 +26,9 @@ The writer uses the same weighted-average P/L formula as the browser and rejects
 
 ## Cutover verification
 
-1. Applied only `20261015000000_tsuki_writer.sql` to the Trade Notes Supabase project. The earlier `20261014000000_journal_fills.sql` proposal was not applied.
+1. Applied `20261015000000_tsuki_writer.sql` and the route correction `20261015010000_tsuki_routes.sql` to the Trade Notes Supabase project. The earlier `20261014000000_journal_fills.sql` proposal was not applied.
 2. Verified the RPC is callable through the public Data API, while `anon` cannot read the token table. The two pre-existing trades remained unchanged.
 3. Issued one expiring owner-bound token to the private Hermes `trader` profile. Never expose it in a public repository, URL, browser code, Telegram message, or assistant reply. Revoke it by setting `revoked_at = now()` on its exact row if this computer/profile is compromised.
-4. Verified Hermes discovers exactly one Trade Notes writer tool. SQL tests ran inside transactions ending in `ROLLBACK`: stock buy1/buy2, dedupe, partial/full sell, over-sell rejection, matching with and without MatchKey, option multiplier/P&L, short P&L, and invalid-token rejection. A live MCP request with an intentionally incomplete payload proved authenticated RPC connectivity without writing a production trade. `tests/live-connection-smoke.mjs` implements that check.
+4. Verified Hermes discovers exactly one Trade Notes writer tool. SQL tests ran inside transactions ending in `ROLLBACK`: stock buy1/buy2, dedupe, partial/full sell, over-sell rejection, matching with and without MatchKey, option multiplier/P&L, short P&L, and invalid-token rejection. The route correction was also tested inside a rolled-back transaction: Position and Swing on the same ticker stayed separate, and the old Nut route was rejected. A live MCP request with an intentionally incomplete payload proved authenticated RPC connectivity without writing a production trade. `tests/live-connection-smoke.mjs` implements that check.
 5. Switched the active Trade logs group prompts and the trade-slip logger instructions from Sheet to Trade Notes; marked the former group as retired. Only workflow lines in `SOUL.md` and `memories/MEMORY.md` changed; Tsuki's style section, user profile, and Stella/PCC were not changed. Hermes gateway restarted and a no-tool `PING` returned in the existing feminine Thai voice.
 6. Remaining acceptance check: send one **new, genuine confirmed execution slip** to the active Trade logs Telegram group and verify the new fill, quantity, fees, MatchKey, and result in Trade Notes. Do not invent or retain a synthetic trade in the production journal for this step. If the real slip lacks a required fact, Tsuki should ask one question and write nothing.
