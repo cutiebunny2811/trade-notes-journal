@@ -38,7 +38,19 @@ let pendingImages = [];
 let viewerImages = [];
 let viewerIndex = 0;
 
-function save(){ localStorage.setItem(STORAGE.trades, JSON.stringify(trades)); localStorage.setItem(STORAGE.setups, JSON.stringify(setups)); }
+function save(){
+  // Cloud Storage owns screenshots. Caching their data URLs on iOS quickly
+  // exhausts localStorage, even after the cloud row has been saved successfully.
+  if(!cloudReady)return;
+  try{
+    localStorage.setItem(STORAGE.trades,JSON.stringify(trades.map(({images,...trade})=>trade)));
+    localStorage.setItem(STORAGE.setups,JSON.stringify(setups));
+  }catch(error){
+    // A full browser cache must never turn a committed cloud write into a
+    // reported failure. The authenticated cloud copy remains authoritative.
+    try{localStorage.removeItem(STORAGE.trades);}catch(_error){}
+  }
+}
 function cloudError(error){ throw new Error(error?.message || 'เชื่อมต่อ Supabase ไม่สำเร็จ'); }
 function dataUrlBlob(src){ const [header,body]=src.split(',');const mime=header.match(/data:([^;]+)/)?.[1]||'image/jpeg';const bytes=atob(body),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime}); }
 async function imageUrl(path){const {data,error}=await cloud.storage.from('trade-images').createSignedUrl(path,86400);if(error)cloudError(error);return data.signedUrl;}
@@ -63,6 +75,8 @@ async function persistTrade(trade,old,importing=false){
     result=await cloud.from('journal_trades').insert({id:trade.id,user_id:cloudUser.id,...update}).select('updated_at').single();
     if(result.error)cloudError(result.error);
   }
+  const obsolete=(old?.imagePaths||[]).filter(path=>!imagePaths.includes(path));
+  if(obsolete.length)await cloud.storage.from('trade-images').remove(obsolete).catch(()=>{});
   return {...trade,imagePaths,updatedAt:result.data.updated_at};
 }
 async function loadCloud(){
@@ -91,7 +105,7 @@ async function loadCloud(){
   if(reloadError)cloudError(reloadError);if(reloadSetupError)cloudError(reloadSetupError);
   trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,updatedAt:row.updated_at,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
   setups=allSetups.map(row=>row.name);
-  cloudReady=true;localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);render();
+  cloudReady=true;save();localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);render();
   $('#authGate').hidden=true;$('#syncStatus').textContent='DATA · SUPABASE';$('#signOutBtn').hidden=false;
   if(missing.length)toast(`ย้ายบันทึกเดิม ${missing.length} รายการขึ้นคลาวด์แล้ว`);
 }
@@ -131,6 +145,7 @@ function scopedTrades(){return trades.filter(t=>(activeMarket==='all'||tradeAsse
 function updateAssetFields(){
   const asset=$('#assetClass').value;
   $('#tradeStyleField').hidden=asset!=='stock'&&asset!=='option';
+  $('#portfolioField').hidden=asset!=='stock'&&asset!=='option';
   $('#symbolLabel').textContent=asset==='stock'||asset==='option'?'SYMBOL / ชื่อหุ้น':'SYMBOL / คู่เทรด';
   $('#symbol').placeholder=({gold:'เช่น XAUUSD',stock:'เช่น AAPL หรือ Apple',option:'เช่น AAPL หรือ TSLA',crypto:'เช่น BTCUSDT'})[asset];
   $('#quickEntryHint').textContent=asset==='stock'
@@ -143,7 +158,7 @@ function render(){
   const filtered=scope.filter(t=>activeFilter==='all'||(activeFilter==='pending'?(t.status==='pending'):(hasKnownPL(t)&&(activeFilter==='win'?t.pl>=0:t.pl<0)))).sort((a,b)=>new Date(b.date)-new Date(a.date));
   $('#tradeList').innerHTML=filtered.map(t=>{const d=dateParts(t.date);return `<article class="trade-row" data-id="${t.id}">
     <div class="trade-date"><strong>${d.day}</strong><span>${d.month}</span></div>
-    <div class="symbol-cell"><strong>${escapeHTML(t.symbol)} <span class="direction ${t.direction.toLowerCase()}">${t.direction}</span>${t.status==='pending'?'<span class="status-chip">PENDING</span>':''}</strong><small><span class="asset-tag">${assetLabel(tradeAsset(t))}</span>${t.tradeStyle?`<span class="style-tag">${escapeHTML(t.tradeStyle)}</span>`:''}${d.time} น.${Array.isArray(t.fills)&&t.fills.length?`<span class="fill-count">${t.fills.length} ไม้ · เปิดดู</span>`:''}</small></div>
+    <div class="symbol-cell"><strong>${escapeHTML(t.symbol)} <span class="direction ${t.direction.toLowerCase()}">${t.direction}</span>${t.status==='pending'?'<span class="status-chip">PENDING</span>':''}</strong><small><span class="asset-tag">${assetLabel(tradeAsset(t))}</span>${t.tradeStyle?`<span class="style-tag">${escapeHTML(t.tradeStyle)}</span>`:''}${t.portfolioKey?`<span class="style-tag">${escapeHTML(t.portfolioKey)}</span>`:''}${d.time} น.${Array.isArray(t.fills)&&t.fills.length?`<span class="fill-count">${t.fills.length} ไม้ · เปิดดู</span>`:''}</small></div>
     <div class="setup-cell"><span class="setup-chip">${escapeHTML(t.setup||'No setup')}</span></div>
     <div class="emotion-triplet">${emotionMini(t.emotions?.before,'before','ก่อนเข้า')}${emotionMini(t.emotions?.during,'during','ระหว่างถือ')}${emotionMini(t.emotions?.after,'after','หลังปิด')}</div>
     <div class="pl-cell ${t.status==='pending'?'pending-pl':(!hasKnownPL(t)?'pending-pl':(t.pl>=0?'win':'loss'))}">${t.status==='pending'?'กำลังถือ':(hasKnownPL(t)?money(t.pl):'รอต้นทุน')}</div>
@@ -230,7 +245,7 @@ function renderExecutionHistory(trade){
 function openTrade(trade,showFills=false){
   $('#tradeForm').reset(); pendingImages=trade?.images?[...trade.images]:[]; $('#tradeId').value=trade?.id||''; $('#formTitle').textContent=trade?'ดูและแก้ไขบันทึก':'บันทึกเทรด';
   $('#assetClass').value=trade?tradeAsset(trade):(activeMarket==='all'?'gold':activeMarket);updateAssetFields();$('#tradeStyle').value=trade?.tradeStyle||'swing';
-  $('#symbol').value=trade?.symbol||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
+  $('#symbol').value=trade?.symbol||''; $('#portfolioKey').value=trade?.portfolioKey||''; $('#tradeStatus').value=trade?.status||(trade?'closed':'pending'); $('#direction').value=trade?.direction||'LONG'; $('#tradeDate').value=trade?.date?.slice(0,16)||localDateValue(); $('#pl').value=trade?.pl??''; $('#notes').value=trade?.notes||'';
   $('#deleteTradeBtn').hidden=!trade;$('#entryMore').open=false;$('#executionHistory').open=false;$('#tradeForm button[type="submit"]').textContent=trade?'บันทึกการแก้ไข →':'บันทึก Journal →';
   renderSetupOptions(trade?.setup); renderEmotionForm(trade?.emotions);resetFillEditor(trade);renderExecutionHistory(trade);renderPreviews(); openModal('trade');$('#tradeModal .modal-card').scrollTop=0;
   if(showFills&&trade&&(tradeAsset(trade)==='stock'||trade.fills?.length)){$('#executionHistory').open=true;$('#executionHistory').scrollIntoView({block:'center'});}
@@ -243,7 +258,7 @@ $('#tradeForm').addEventListener('submit',async e=>{
   const id=$('#tradeId').value||crypto.randomUUID(),old=trades.find(t=>t.id===id);
   const status=old?.plSource==='fills'?old.status:$('#tradeStatus').value,assetClass=$('#assetClass').value,emotions={};
   $$('.emotion-field').forEach(f=>emotions[f.dataset.emotion]=f.dataset.emotion==='after'&&status==='pending'?null:($('.selected',f)?.dataset.value||null));
-  const trade={...old,id,matchKey:old?.matchKey||`TN-${id}`,status,assetClass,tradeStyle:assetClass==='stock'||assetClass==='option'?$('#tradeStyle').value:null,symbol:$('#symbol').value.trim().toUpperCase(),direction:$('#direction').value,date:$('#tradeDate').value,pl:old?.plSource==='fills'?old.pl:(status==='pending'?null:($('#pl').value===''?null:Number($('#pl').value))),setup:$('#setup').value,emotions,notes:$('#notes').value.trim(),images:pendingImages.length?pendingImages:(old?.images||[])};
+  const trade={...old,id,matchKey:old?.matchKey||`TN-${id}`,status,assetClass,tradeStyle:assetClass==='stock'||assetClass==='option'?$('#tradeStyle').value:null,portfolioKey:assetClass==='stock'||assetClass==='option'?$('#portfolioKey').value.trim().toUpperCase():null,symbol:$('#symbol').value.trim().toUpperCase(),direction:$('#direction').value,date:$('#tradeDate').value,pl:old?.plSource==='fills'?old.pl:(status==='pending'?null:($('#pl').value===''?null:Number($('#pl').value))),setup:$('#setup').value,emotions,notes:$('#notes').value.trim(),images:pendingImages};
   const button=$('#tradeForm button[type="submit"]');button.disabled=true;
   try{
     const saved=await persistTrade(trade,old);trades=old?trades.map(t=>t.id===id?saved:t):[saved,...trades];
@@ -318,7 +333,23 @@ document.addEventListener('click',async event=>{
   catch(error){toast(`ลบไม้ไม่สำเร็จ: ${error.message}`);remove.disabled=false;}
 });
 $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');const name=$('#newSetupName').value.trim();if(!name)return;if(setups.some(x=>x.toLowerCase()===name.toLowerCase()))return toast('มี Setup ชื่อนี้แล้ว');const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error)return toast(`เพิ่ม Setup ไม่สำเร็จ: ${error.message}`);setups.push(name);$('#newSetupName').value='';save();render();toast('เพิ่ม Setup แล้ว');});
-$('#screenshots').addEventListener('change',async e=>{const files=[...e.target.files].slice(0,3);pendingImages=await Promise.all(files.map(file=>new Promise(resolve=>{const img=new Image(),reader=new FileReader();reader.onload=()=>{img.onload=()=>{const c=document.createElement('canvas'),max=1200,scale=Math.min(1,max/img.width);c.width=img.width*scale;c.height=img.height*scale;c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.76));};img.src=reader.result};reader.readAsDataURL(file)})));renderPreviews();});
+$('#screenshots').addEventListener('change',async e=>{
+  const files=[...e.target.files].slice(0,Math.max(0,3-pendingImages.length));
+  e.target.value='';
+  if(!files.length)return toast('แนบภาพได้สูงสุด 3 ภาพ');
+  try{
+    const added=await Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+      const img=new Image(),reader=new FileReader();
+      reader.onerror=()=>reject(new Error('อ่านไฟล์ภาพไม่สำเร็จ'));
+      img.onerror=()=>reject(new Error('เปิดไฟล์ภาพไม่สำเร็จ'));
+      reader.onload=()=>{img.onload=()=>{
+        try{const c=document.createElement('canvas'),max=1200,scale=Math.min(1,max/img.width);c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.76));}
+        catch(error){reject(error);}
+      };img.src=reader.result;};reader.readAsDataURL(file);
+    })));
+    pendingImages=[...pendingImages,...added].slice(0,3);renderPreviews();
+  }catch(error){toast(`แนบภาพไม่สำเร็จ: ${error.message}`);}
+});
 $('#tradeStatus').addEventListener('change',updateStatusFields);
 $('#assetClass').addEventListener('change',updateAssetFields);
 $('#deleteTradeBtn').addEventListener('click',()=>{const trade=trades.find(t=>t.id===$('#tradeId').value);if(!trade)return;$('#deleteDescription').textContent=`${trade.symbol} · ${dateParts(trade.date).day} ${dateParts(trade.date).month} — รายการและรูปออเดอร์จะถูกลบออกจากคลาวด์ กู้คืนไม่ได้`;openModal('delete');});

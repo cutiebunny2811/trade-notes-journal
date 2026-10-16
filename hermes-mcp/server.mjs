@@ -23,6 +23,7 @@ const tools = [{
       lane: { type: "string", enum: ["swing", "option", "position"], description: "Trade Notes route: swing/position for stocks, option for contracts. Never use legacy Nut/Ging/longterm routes." },
       assetClass: { type: "string", enum: ["stock", "option"] },
       tradeStyle: { type: "string", enum: ["swing", "position"], description: "Optional for option; stock style must match its lane." },
+      portfolioKey: { type: "string", description: "Stable portfolio/account identity from the broker slip or an explicit user-given portfolio name. Use the same value for later buys and sells; this is separate from swing/position lane. Do not guess a missing account." },
       symbol: { type: "string", description: "Underlying ticker, not an option contract string." },
       direction: { type: "string", enum: ["LONG", "SHORT"] },
       action: { type: "string", enum: ["buy", "sell"] },
@@ -57,6 +58,7 @@ const tools = [{
       symbol: { type: "string", description: "Optional exact underlying ticker filter." },
       matchKey: { type: "string", description: "Exact known MatchKey; bypasses date filtering to locate the trade for correction." },
       brokerExecutionId: { type: "string", description: "Exact broker execution ID; bypasses date filtering to locate the trade for correction." },
+      portfolioKey: { type: "string", description: "Portfolio/account identity when filtering by a broker execution ID recorded for that portfolio." },
     },
   },
 }, {
@@ -181,10 +183,14 @@ async function callRpc(name, args) {
 
 async function callWriter(args) {
   const payload = { ...args };
+  if (payload.portfolioKey) payload.portfolioKey = payload.portfolioKey.trim().toUpperCase();
+  if (payload.brokerExecutionId && payload.portfolioKey) {
+    payload.brokerExecutionId = `scoped:${createHash("sha256").update(JSON.stringify([payload.portfolioKey, payload.brokerExecutionId])).digest("hex")}`;
+  }
   if (!payload.sourceKey) {
     const identity = payload.brokerExecutionId
       ? ["execution", payload.brokerExecutionId]
-      : ["slip-fingerprint", payload.lane, payload.assetClass, payload.symbol,
+      : ["slip-fingerprint", payload.lane, payload.assetClass, payload.portfolioKey, payload.symbol,
         payload.optionContract?.expiry, payload.optionContract?.strike,
         payload.optionContract?.right, payload.direction, payload.action,
         payload.quantity, payload.unitPrice, payload.multiplier,
@@ -197,10 +203,13 @@ async function callWriter(args) {
 
 async function callReader(args) {
   const range = reviewRange(args);
+  const brokerExecutionId = args.brokerExecutionId && args.portfolioKey
+    ? `scoped:${createHash("sha256").update(JSON.stringify([args.portfolioKey.trim().toUpperCase(), args.brokerExecutionId])).digest("hex")}`
+    : args.brokerExecutionId;
   const result = await callRpc("api_tsuki_read_journal", {
     p_from: range.from, p_to: range.to,
     p_symbol: args.symbol || null, p_match_key: args.matchKey || null,
-    p_broker_execution_id: args.brokerExecutionId || null,
+    p_broker_execution_id: brokerExecutionId || null,
   });
   return withPeriodMath(result);
 }

@@ -42,6 +42,7 @@ test("lists scoped writer, reader and correction tools and refuses a missing tok
   assert.deepEqual(fields.lane.enum, ["swing", "option", "position"]);
   assert.deepEqual(fields.assetClass.enum, ["stock", "option"]);
   assert.deepEqual(fields.tradeStyle.enum, ["swing", "position"]);
+  assert.ok(fields.portfolioKey);
   assert.equal(output[1].result.isError, true);
 });
 
@@ -161,4 +162,33 @@ test("derives a stable source key when Telegram does not expose message metadata
   } finally {
     http.close();
   }
+});
+
+test("scopes otherwise identical slip identities and broker IDs to their portfolios", async () => {
+  const payloads = [];
+  const http = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    payloads.push(JSON.parse(Buffer.concat(chunks).toString()).p_payload);
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ duplicate: false, fillCount: 1 }));
+  });
+  await new Promise(resolve => http.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = http.address();
+    const env = { TRADE_NOTES_AGENT_TOKEN: token, TRADE_NOTES_URL: `http://127.0.0.1:${port}` };
+    const base = { ...sample, brokerExecutionId: "webull:execution-17" };
+    delete base.sourceKey;
+    await runAdapter(env, [{ jsonrpc: "2.0", id: 8, method: "tools/call", params: {
+      name: "record_confirmed_trade_fill", arguments: { ...base, portfolioKey: "Webull A" },
+    } }]);
+    await runAdapter(env, [{ jsonrpc: "2.0", id: 9, method: "tools/call", params: {
+      name: "record_confirmed_trade_fill", arguments: { ...base, portfolioKey: "Webull B" },
+    } }]);
+    assert.equal(payloads[0].portfolioKey, "WEBULL A");
+    assert.equal(payloads[1].portfolioKey, "WEBULL B");
+    assert.notEqual(payloads[0].brokerExecutionId, payloads[1].brokerExecutionId);
+    assert.notEqual(payloads[0].sourceKey, payloads[1].sourceKey);
+    assert.equal(payloads[0].brokerExecutionId.startsWith("scoped:"), true);
+  } finally { http.close(); }
 });

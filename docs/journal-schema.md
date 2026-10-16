@@ -7,6 +7,7 @@ Trade Notes stores one JSON `data` document per row in `public.journal_trades`, 
   "id": "trade-uuid",
   "matchKey": "TN-trade-uuid",
   "lane": null,
+  "portfolioKey": "WEBULL SWING A",
   "assetClass": "stock",
   "tradeStyle": "swing",
   "optionContract": null,
@@ -30,7 +31,7 @@ Trade Notes stores one JSON `data` document per row in `public.journal_trades`, 
 
 Old entries may omit `assetClass` and `tradeStyle`. The UI infers GOLD/XAU as gold and common crypto tickers as crypto; otherwise it displays stock. Editing and saving an older entry writes an explicit class. The UI does not automatically rewrite historical records.
 
-Quick entries may have `setup: ""` and `emotions.before/during/after: null`; the app must never infer these from a broker slip. A new manual entry receives a stable `matchKey` based on its UUID. Existing entries without one receive it the next time they are saved. Bot `lane` is `swing`, `option`, or `position`; retired Nut/Ging/longterm captions are never mapped automatically. A missing lane is not silently guessed. A bot-calculated result will set `plSource: "fills"`, keeping manual P/L entry read-only. A closed trade with an unknown cost basis may have `pl: null` and is excluded from P/L and win-rate calculations until reconciled. The browser must preserve fields it does not edit when saving a journal row, and reject a stale save instead of overwriting a newer bot update.
+Quick entries may have `setup: ""` and `emotions.before/during/after: null`; the app must never infer these from a broker slip. A new manual entry receives a stable `matchKey` based on its UUID. Existing entries without one receive it the next time they are saved. `portfolioKey` is an optional stable private account/portfolio identifier, independent of `lane`; old rows remain unscoped until the user labels them. Bot `lane` is `swing`, `option`, or `position`; retired Nut/Ging/longterm captions are never mapped automatically. A missing lane is not silently guessed. A bot-calculated result will set `plSource: "fills"`, keeping manual P/L entry read-only. A closed trade with an unknown cost basis may have `pl: null` and is excluded from P/L and win-rate calculations until reconciled. The browser must preserve fields it does not edit when saving a journal row, and reject a stale save instead of overwriting a newer bot update.
 
 ## Manual stock fills (live)
 
