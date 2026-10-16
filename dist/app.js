@@ -105,7 +105,9 @@ async function loadCloud(){
   if(reloadError)cloudError(reloadError);if(reloadSetupError)cloudError(reloadSetupError);
   trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,updatedAt:row.updated_at,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
   setups=allSetups.map(row=>row.name);
-  cloudReady=true;save();localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);render();
+  cloudReady=true;save();
+  try{localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);}catch(_error){/* Cloud remains authoritative even if this browser cache is full. */}
+  render();
   $('#authGate').hidden=true;$('#syncStatus').textContent='DATA · SUPABASE';$('#signOutBtn').hidden=false;
   if(missing.length)toast(`ย้ายบันทึกเดิม ${missing.length} รายการขึ้นคลาวด์แล้ว`);
 }
