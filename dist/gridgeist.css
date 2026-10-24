@@ -455,7 +455,7 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 @media(max-width:900px){.market-toolbar{margin-top:0}.insight-grid{gap:12px}}
 @media(max-width:640px){
   .market-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:11px;margin:-2px 0 18px;padding-bottom:17px}
-  .market-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+  .market-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
   .market-filter{padding:6px 2px;min-height:34px;font-size:9px}
   .market-search{width:100%}
   .insights-heading{display:block}

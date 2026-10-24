@@ -22,6 +22,7 @@ const EXIT_EMOTIONS = [
 const EMOTIONS = TRADE_EMOTIONS;
 const ASSETS = [
   {id:'gold',label:'ทอง',english:'GOLD'},
+  {id:'oil',label:'น้ำมัน',english:'OIL'},
   {id:'stock',label:'หุ้น',english:'STOCK'},
   {id:'option',label:'ออปชั่น',english:'OPTIONS'},
   {id:'crypto',label:'คริปโต',english:'CRYPTO'}
@@ -139,6 +140,7 @@ function tradeAsset(trade){
   if(ASSETS.some(asset=>asset.id===trade.assetClass))return trade.assetClass;
   const symbol=String(trade.symbol||'').toUpperCase();
   if(/^(XAU|GOLD)/.test(symbol))return 'gold';
+  if(/^(USOIL|UKOIL|XTIUSD|XBRUSD|WTIUSD|BRENT|OILUSD)/.test(symbol))return 'oil';
   if(/^(BTC|ETH|SOL|BNB|DOGE|XRP|ADA|AVAX|LTC)/.test(symbol))return 'crypto';
   return 'stock';
 }
@@ -149,7 +151,7 @@ function updateAssetFields(){
   $('#tradeStyleField').hidden=asset!=='stock'&&asset!=='option';
   $('#portfolioField').hidden=asset!=='stock'&&asset!=='option';
   $('#symbolLabel').textContent=asset==='stock'||asset==='option'?'SYMBOL / ชื่อหุ้น':'SYMBOL / คู่เทรด';
-  $('#symbol').placeholder=({gold:'เช่น XAUUSD',stock:'เช่น AAPL หรือ Apple',option:'เช่น AAPL หรือ TSLA',crypto:'เช่น BTCUSDT'})[asset];
+  $('#symbol').placeholder=({gold:'เช่น XAUUSD',oil:'เช่น USOIL, UKOIL หรือ XTIUSD',stock:'เช่น AAPL หรือ Apple',option:'เช่น AAPL หรือ TSLA',crypto:'เช่น BTCUSDT'})[asset];
   $('#quickEntryHint').textContent=asset==='stock'
     ? 'บันทึกหุ้นก่อน แล้วเพิ่มไม้ 1 / ไม้ 2 / ไม้ขายได้ทันที'
     : 'บันทึกเท่านี้ได้เลย · รายละเอียดอื่นเพิ่มทีหลังได้';

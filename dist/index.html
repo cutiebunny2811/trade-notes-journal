@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="fixes.css" />
-  <link rel="stylesheet" href="gridgeist.css" />
+  <link rel="stylesheet" href="gridgeist.css?v=oil-1" />
   <link rel="stylesheet" href="quick-entry.css?v=3" />
   <link rel="stylesheet" href="fills.css?v=1" />
 </head>
@@ -56,6 +56,7 @@
         <div class="market-filters" role="group" aria-label="ประเภทสินทรัพย์">
           <button class="market-filter active" type="button" data-market="all" aria-pressed="true">ทั้งหมด</button>
           <button class="market-filter" type="button" data-market="gold" aria-pressed="false">ทอง</button>
+          <button class="market-filter" type="button" data-market="oil" aria-pressed="false">น้ำมัน</button>
           <button class="market-filter" type="button" data-market="stock" aria-pressed="false">หุ้น</button>
           <button class="market-filter" type="button" data-market="option" aria-pressed="false">ออปชั่น</button>
           <button class="market-filter" type="button" data-market="crypto" aria-pressed="false">คริปโต</button>
@@ -138,7 +139,7 @@
         <div class="form-section">
           <div class="form-section-label"><span>01</span><div><strong>จดแบบง่าย</strong><small>QUICK JOURNAL</small></div></div>
           <div class="form-grid">
-            <label class="field span-2"><span>ประเภทสินทรัพย์</span><select id="assetClass" required><option value="gold">ทอง / GOLD</option><option value="stock">หุ้น / STOCK</option><option value="option">ออปชั่น / OPTIONS</option><option value="crypto">คริปโต / CRYPTO</option></select></label>
+            <label class="field span-2"><span>ประเภทสินทรัพย์</span><select id="assetClass" required><option value="gold">ทอง / GOLD</option><option value="oil">น้ำมัน / OIL</option><option value="stock">หุ้น / STOCK</option><option value="option">ออปชั่น / OPTIONS</option><option value="crypto">คริปโต / CRYPTO</option></select></label>
             <label class="field span-2"><span id="symbolLabel">SYMBOL / คู่เทรด</span><input id="symbol" placeholder="เช่น XAUUSD" required autocomplete="off" /></label>
             <label class="field span-2" id="tradeStyleField" hidden><span>รูปแบบการเทรด</span><select id="tradeStyle"><option value="swing">Swing trade</option><option value="day">Day trade</option><option value="position">Position trade</option></select></label>
               <label class="field span-2" id="portfolioField" hidden><span>พอร์ต / บัญชี (ถ้ามีหลายพอร์ต)</span><input id="portfolioKey" maxlength="100" autocomplete="off" placeholder="เช่น Webull Swing A หรือรหัสบัญชีจากสลิป"></label>
@@ -240,6 +241,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="fill-math.js?v=1"></script>
-  <script src="app.js?v=portfolio-images-2"></script>
+  <script src="app.js?v=oil-1"></script>
 </body>
 </html>
