@@ -35,6 +35,8 @@ let activeFilter = 'all';
 let activeMarket = 'all';
 let searchQuery = '';
 let activeView = 'journal';
+const JOURNAL_PAGE_SIZE = 10;
+let journalPage = 1;
 let pendingImages = [];
 let viewerImages = [];
 let viewerIndex = 0;
@@ -53,8 +55,31 @@ function save(){
   }
 }
 function cloudError(error){ throw new Error(error?.message || 'เชื่อมต่อ Supabase ไม่สำเร็จ'); }
+async function fetchAllRows(table,columns,ascending){
+  const rows=[],batchSize=500;
+  for(let start=0;;start+=batchSize){
+    const query=cloud.from(table).select(columns).order('created_at',{ascending}).order(table==='journal_trades'?'id':'name',{ascending:true});
+    const {data,error}=await query.range(start,start+batchSize-1);
+    if(error)cloudError(error);
+    rows.push(...(data||[]));
+    if(!data||data.length<batchSize)return rows;
+  }
+}
 function dataUrlBlob(src){ const [header,body]=src.split(',');const mime=header.match(/data:([^;]+)/)?.[1]||'image/jpeg';const bytes=atob(body),array=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)array[i]=bytes.charCodeAt(i);return new Blob([array],{type:mime}); }
-async function imageUrl(path){const {data,error}=await cloud.storage.from('trade-images').createSignedUrl(path,86400);if(error)cloudError(error);return data.signedUrl;}
+async function signedImageUrls(rows){
+  const paths=[...new Set(rows.flatMap(row=>row.data?.imagePaths||[]))],urls=new Map(),batchSize=100;
+  for(let start=0;start<paths.length;start+=batchSize){
+    const batch=paths.slice(start,start+batchSize);
+    const {data,error}=await cloud.storage.from('trade-images').createSignedUrls(batch,86400);
+    if(error)cloudError(error);
+    for(const [index,item] of (data||[]).entries()){
+      if(item.error)throw new Error(item.error);
+      urls.set(item.path||batch[index],item.signedUrl);
+    }
+    if(batch.some(path=>!urls.has(path)))throw new Error('โหลดภาพออเดอร์ไม่ครบ');
+  }
+  return urls;
+}
 async function prepareRemoteTrade(trade,old,importing=false){
   const imagePaths=[];
   for(const [imageIndex,src] of (trade.images||[]).entries()){
@@ -82,11 +107,10 @@ async function persistTrade(trade,old,importing=false){
 }
 async function loadCloud(){
   if(!cloudUser)return;
-  const [{data:remoteTrades,error:tradeError},{data:remoteSetups,error:setupError}]=await Promise.all([
-    cloud.from('journal_trades').select('id,data,updated_at').order('created_at',{ascending:false}),
-    cloud.from('journal_setups').select('name').order('created_at',{ascending:true})
+  const [remoteTrades,remoteSetups]=await Promise.all([
+    fetchAllRows('journal_trades','id,data,updated_at',false),
+    fetchAllRows('journal_setups','name',true)
   ]);
-  if(tradeError)cloudError(tradeError);if(setupError)cloudError(setupError);
   const previousOwner=localStorage.getItem('trade-notes:cloud-owner');
   // Import local-only data once; otherwise a deleted cloud trade could be recreated from stale cache.
   const canImport=!previousOwner;
@@ -100,11 +124,11 @@ async function loadCloud(){
   for(const trade of missing)await persistTrade(trade,null,true);
   const remoteNames=new Set(remoteSetups.map(row=>row.name));
   for(const name of localSetups.filter(name=>!remoteNames.has(name))){const {error}=await cloud.from('journal_setups').insert({user_id:cloudUser.id,name});if(error&&error.code!=='23505')cloudError(error);}
-  const [{data:allTrades,error:reloadError},{data:allSetups,error:reloadSetupError}]=await Promise.all([
-    cloud.from('journal_trades').select('id,data,updated_at').order('created_at',{ascending:false}),cloud.from('journal_setups').select('name').order('created_at',{ascending:true})
+  const [allTrades,allSetups]=await Promise.all([
+    fetchAllRows('journal_trades','id,data,updated_at',false),fetchAllRows('journal_setups','name',true)
   ]);
-  if(reloadError)cloudError(reloadError);if(reloadSetupError)cloudError(reloadSetupError);
-  trades=await Promise.all(allTrades.map(async row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,updatedAt:row.updated_at,imagePaths,images:await Promise.all(imagePaths.map(imageUrl))};}));
+  const imageUrls=await signedImageUrls(allTrades);
+  trades=allTrades.map(row=>{const data=row.data||{},imagePaths=data.imagePaths||[];return {...data,id:row.id,updatedAt:row.updated_at,imagePaths,images:imagePaths.map(path=>imageUrls.get(path))};});
   setups=allSetups.map(row=>row.name);
   cloudReady=true;save();
   try{localStorage.setItem('trade-notes:cloud-owner',cloudUser.id);}catch(_error){/* Cloud remains authoritative even if this browser cache is full. */}
@@ -146,6 +170,19 @@ function tradeAsset(trade){
 }
 function assetLabel(id){return ASSETS.find(asset=>asset.id===id)?.label||'ทั้งหมด';}
 function scopedTrades(){return trades.filter(t=>(activeMarket==='all'||tradeAsset(t)===activeMarket)&&(!searchQuery||String(t.symbol||'').toUpperCase().includes(searchQuery)));}
+function journalPageSlice(entries,page){
+  const pageCount=Math.max(1,Math.ceil(entries.length/JOURNAL_PAGE_SIZE));
+  const currentPage=Math.min(Math.max(1,Math.trunc(Number(page)||1)),pageCount);
+  const start=(currentPage-1)*JOURNAL_PAGE_SIZE;
+  return {page:currentPage,pageCount,start,items:entries.slice(start,start+JOURNAL_PAGE_SIZE)};
+}
+function resetJournalPage(){journalPage=1;$('#tradeList').scrollTop=0;}
+function goToJournalPage(page){
+  journalPage=page;
+  render();
+  $('#tradeList').scrollTop=0;
+  $('.journal-panel').scrollIntoView({block:'start'});
+}
 function updateAssetFields(){
   const asset=$('#assetClass').value;
   $('#tradeStyleField').hidden=asset!=='stock'&&asset!=='option';
@@ -160,7 +197,9 @@ function updateAssetFields(){
 function render(){
   const scope=scopedTrades();
   const filtered=scope.filter(t=>activeFilter==='all'||(activeFilter==='pending'?(t.status==='pending'):(hasKnownPL(t)&&(activeFilter==='win'?t.pl>=0:t.pl<0)))).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  $('#tradeList').innerHTML=filtered.map(t=>{const d=dateParts(t.date);return `<article class="trade-row" data-id="${t.id}">
+  const current=journalPageSlice(filtered,journalPage);
+  journalPage=current.page;
+  $('#tradeList').innerHTML=current.items.map(t=>{const d=dateParts(t.date);return `<article class="trade-row" data-id="${t.id}">
     <div class="trade-date"><strong>${d.day}</strong><span>${d.month}</span></div>
     <div class="symbol-cell"><strong>${escapeHTML(t.symbol)} <span class="direction ${t.direction.toLowerCase()}">${t.direction}</span>${t.status==='pending'?'<span class="status-chip">PENDING</span>':''}</strong><small><span class="asset-tag">${assetLabel(tradeAsset(t))}</span>${t.tradeStyle?`<span class="style-tag">${escapeHTML(t.tradeStyle)}</span>`:''}${t.portfolioKey?`<span class="style-tag">${escapeHTML(t.portfolioKey)}</span>`:''}${d.time} น.${Array.isArray(t.fills)&&t.fills.length?`<span class="fill-count">${t.fills.length} ไม้ · เปิดดู</span>`:''}</small></div>
     <div class="setup-cell"><span class="setup-chip">${escapeHTML(t.setup||'No setup')}</span></div>
@@ -170,6 +209,11 @@ function render(){
     <button class="more-btn" aria-label="เปิดรายละเอียดและไม้ซื้อขาย">›</button>
   </article>`}).join('');
   $('#emptyState').hidden=filtered.length>0;
+  $('#journalPagination').hidden=filtered.length<=JOURNAL_PAGE_SIZE;
+  $('#pageRange').textContent=`รายการ ${current.start+1}–${current.start+current.items.length} จาก ${filtered.length}`;
+  $('#pageNumber').value=current.page;$('#pageNumber').max=current.pageCount;
+  $('#pageTotal').textContent=`/ ${current.pageCount}`;
+  $('#previousPage').disabled=current.page===1;$('#nextPage').disabled=current.page===current.pageCount;
   const closedAll=scope.filter(t=>t.status!=='pending'),closed=closedAll.filter(hasKnownPL),pending=scope.filter(t=>t.status==='pending');
   $('#openTradeCount').textContent=pending.length; $('#tradeCount').textContent=`${filtered.length} / ${scope.length} ENTRIES`;
   const net=closed.reduce((s,t)=>s+Number(t.pl),0), wins=closed.filter(t=>t.pl>0);
@@ -368,6 +412,7 @@ function setView(view){
   $$('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));
   $('.topbar h1').textContent=view==='insights'?'Trade Insights':'Trading Journal';
   $('.page-intro').textContent=view==='insights'?'ทบทวนผลลัพธ์ตามตลาด สัญลักษณ์ Setup และอารมณ์':'ทบทวนแผน การตัดสินใจ และอารมณ์ — ไม่ใช่แค่ผลลัพธ์';
+  window.scrollTo({top:0,left:0});
 }
 document.addEventListener('click',e=>{
   const close=e.target.closest('[data-close]'); if(close)closeModal(close.dataset.close);
@@ -377,8 +422,10 @@ document.addEventListener('click',e=>{
   const emo=e.target.closest('.emotion-choice');if(emo){const wasSelected=emo.classList.contains('selected');$$('.emotion-choice',emo.parentElement).forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});if(!wasSelected){emo.classList.add('selected');emo.setAttribute('aria-pressed','true')}}
   const row=e.target.closest('.trade-row');if(row)openTrade(trades.find(t=>t.id===row.dataset.id),true);
   const review=e.target.closest('[data-review-trade]');if(review)openTrade(trades.find(t=>t.id===review.dataset.reviewTrade),true);
-  const filter=e.target.closest('.filter');if(filter){activeFilter=filter.dataset.filter;$$('.filter').forEach(x=>x.classList.remove('active'));filter.classList.add('active');render();}
-  const market=e.target.closest('.market-filter');if(market){activeMarket=market.dataset.market;$$('.market-filter').forEach(x=>{const selected=x===market;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));});render();}
+  const filter=e.target.closest('.filter');if(filter){activeFilter=filter.dataset.filter;$$('.filter').forEach(x=>x.classList.remove('active'));filter.classList.add('active');resetJournalPage();render();}
+  const market=e.target.closest('.market-filter');if(market){activeMarket=market.dataset.market;$$('.market-filter').forEach(x=>{const selected=x===market;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));});resetJournalPage();render();}
+  if(e.target.closest('#previousPage'))goToJournalPage(journalPage-1);
+  if(e.target.closest('#nextPage'))goToJournalPage(journalPage+1);
   const del=e.target.closest('.delete-setup');if(del){const name=setups[Number(del.dataset.index)];if(!cloudReady)return toast('กรุณาเข้าสู่ระบบก่อน');cloud.from('journal_setups').delete().eq('name',name).then(({error})=>{if(error)return toast(`ลบไม่สำเร็จ: ${error.message}`);setups.splice(setups.indexOf(name),1);save();render();});}
   const rm=e.target.closest('[data-remove-image]');if(rm){pendingImages.splice(Number(rm.dataset.removeImage),1);renderPreviews();}
   const view=e.target.closest('[data-view-image]');if(view)openImageViewer(pendingImages,Number(view.dataset.viewImage));
@@ -386,7 +433,9 @@ document.addEventListener('click',e=>{
   if(e.target.closest('.viewer-prev')){viewerIndex--;updateViewer();}
   if(e.target.closest('.viewer-next')){viewerIndex++;updateViewer();}
 });
-$('#symbolSearch').addEventListener('input',e=>{searchQuery=e.target.value.trim().toUpperCase();render();});
+$('#symbolSearch').addEventListener('input',e=>{searchQuery=e.target.value.trim().toUpperCase();resetJournalPage();render();});
+$('#pageNumber').addEventListener('change',e=>goToJournalPage(Number(e.target.value)));
+$('#pageNumber').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur();}});
 $('#exportJournalBtn').addEventListener('click',()=>{
   const payload={schemaVersion:2,exportedAt:new Date().toISOString(),currency:'USD',setups,trades:trades.map(({images,...trade})=>({...trade,assetClass:tradeAsset(trade)}))};
   const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));

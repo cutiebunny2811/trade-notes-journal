@@ -1,6 +1,6 @@
 # Trade Notes Journal
 
-Personal trading journal for gold, stocks, options, and crypto. Save pending or closed positions, P/L in USD, editable setups, emotions through the trade, and order screenshots. Entries can be edited or deleted with confirmation; deleting an entry also removes its linked screenshots. The journal screener filters by asset class, symbol, and status. The Insights view compares market, setup, symbol, entry emotion, and holding style, and opens trades needing review.
+Personal trading journal for gold, oil, stocks, options, and crypto. Save pending or closed positions, P/L in USD, editable setups, emotions through the trade, and order screenshots. Entries can be edited or deleted with confirmation; deleting an entry also removes its linked screenshots. The journal screener filters by asset class, symbol, and status. Results show 10 trades per page with previous/next and direct page jump; changing a filter returns to page one. The cloud loader fetches every database batch rather than stopping at the default 1000-row limit. The Insights view compares market, setup, symbol, entry emotion, and holding style, and opens trades needing review.
 
 The entry form is quick-first: asset, symbol, holding style, status, direction, and a short note stay visible; date, setup, emotions, and screenshots are optional details. New entries do not silently select a setup or emotion. A stable `matchKey` is assigned when a manual entry is saved, and bot-managed execution fields are preserved when a note is edited.
 

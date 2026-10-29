@@ -284,11 +284,20 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
 .form-actions .secondary-btn,.modal-head .icon-btn{color:#7f1535;border-color:#7f1535;background:#f2eded}
 .form-actions .secondary-btn:hover,.modal-head .icon-btn:hover{background:#390517;color:white}
 
-/* Keep the journal compact while longer summaries and lists remain scrollable. */
+/* Journal pages keep each list bounded without a second scroll area. */
 .trade-columns{background:#dbe2db}
 .trade-row:hover{background:#edf1ec}
 .setup-chip{background:#d5ddd5}
-#tradeList{max-height:510px;overflow-y:auto;scrollbar-color:#91a298 #e5eae4;scrollbar-width:thin}
+#tradeList{max-height:none;overflow:visible}
+.journal-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0;padding:15px 20px;border-top:1px solid var(--g-rule);background:#e5ebe4}
+.journal-pagination[hidden]{display:none}
+.page-range{font:600 10px "JetBrains Mono",monospace;letter-spacing:.02em;color:#56685d}
+.page-controls{display:flex;align-items:center;gap:7px;font:600 11px "Noto Sans Thai",sans-serif;color:#354b3f}
+.page-controls button{min-height:40px;padding:6px 10px;border:1px solid #a9b5aa;background:#edf1eb;color:#203d30;font:600 11px "Noto Sans Thai",sans-serif;cursor:pointer}
+.page-controls button:hover:not(:disabled){background:#d9e1d8}
+.page-controls button:disabled{opacity:.45;cursor:default}
+.page-controls input{width:52px;min-height:40px;padding:6px 4px;text-align:center;font:600 12px "JetBrains Mono",monospace;background:#f6f7f2}
+.page-controls button:focus-visible,.page-controls input:focus-visible{outline:2px solid #9a7249;outline-offset:2px}
 @media(min-width:901px){
   .reflection-panel{max-height:430px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#8d7452 #10241e;scrollbar-width:thin}
 }
@@ -458,6 +467,9 @@ h1,h2,.brand-copy strong,.setup-stat,.primary-btn,.secondary-btn,.filter,.nav-it
   .market-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
   .market-filter{padding:6px 2px;min-height:34px;font-size:9px}
   .market-search{width:100%}
+  .journal-pagination{padding:12px;gap:9px}
+  .page-controls{width:100%;justify-content:space-between;gap:4px}
+  .page-controls button{padding:6px 8px}
   .insights-heading{display:block}
   .insights-heading p:not(.eyebrow){line-height:1.5}
   .export-btn{margin-top:15px}

@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="fixes.css" />
-  <link rel="stylesheet" href="gridgeist.css?v=oil-1" />
+  <link rel="stylesheet" href="gridgeist.css?v=journal-pages-1" />
   <link rel="stylesheet" href="quick-entry.css?v=3" />
   <link rel="stylesheet" href="fills.css?v=1" />
 </head>
@@ -94,6 +94,16 @@
             <p>เริ่มจากเทรดล่าสุดของคุณ แล้วค่อย ๆ เห็น pattern ที่ซ่อนอยู่</p>
             <button class="text-btn" id="emptyAddBtn">บันทึกเทรดแรก →</button>
           </div>
+          <nav class="journal-pagination" id="journalPagination" aria-label="หน้ารายการเทรด" hidden>
+            <span id="pageRange" class="page-range" aria-live="polite"></span>
+            <div class="page-controls">
+              <button type="button" id="previousPage">‹ ก่อนหน้า</button>
+              <label for="pageNumber">หน้า</label>
+              <input id="pageNumber" type="number" min="1" step="1" inputmode="numeric" aria-label="ไปหน้ารายการเทรด" />
+              <span id="pageTotal"></span>
+              <button type="button" id="nextPage">ถัดไป ›</button>
+            </div>
+          </nav>
         </div>
 
         <aside class="reflection-panel">
@@ -241,6 +251,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="fill-math.js?v=1"></script>
-  <script src="app.js?v=oil-1"></script>
+  <script src="app.js?v=journal-pages-1"></script>
 </body>
 </html>
